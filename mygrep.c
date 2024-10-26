@@ -14,7 +14,6 @@
 void parseFlags(int argc, char** argv);
 FILE* findOutput();
 void usage(void);
-FILE* findInput(int argc, char** argv);
 char* findKeyword(char** argv);
 void fopenFail(void);
 bool grepFile(FILE* input, FILE* output, char* keyord, bool isCaseSensitive);
@@ -27,17 +26,34 @@ bool wantsOutFile = false;
 char* outPath;
 char* inPath;
 
-
-
 int main(int argc, char *argv[]){
 
     parseFlags(argc, argv);
     FILE* output = findOutput();
-    FILE* input = findInput(argc, argv);
     char* keyword = findKeyword(argv);
+
+    int numberOfPositionalArguments = argc - optind;
+
+    if (numberOfPositionalArguments < 1)
+    {
+        usage();
+    } else if (numberOfPositionalArguments == 1)
+    {
+        grepFile(stdin, output, keyword, isCaseSensitive);
+    } else{
+        for (int i = optind + 1; i < argc; i++)
+        {
+            inPath = argv[i];
+            FILE* input = fopen(inPath, "r");
+            if (input == NULL)
+            {
+                fopenFail();
+            }
+            grepFile(input, output, keyword, isCaseSensitive);
+        }
+    }
     
-    grepFile(input, output, keyword, isCaseSensitive);
-    
+    fclose(output);
 }
 
 bool grepFile(FILE* input, FILE* output, char* keyword, bool isCaseSensitive){
@@ -62,6 +78,7 @@ bool grepFile(FILE* input, FILE* output, char* keyword, bool isCaseSensitive){
     while (hasNext); 
     
     free(currentLine);
+    fclose(input);
 }
 
 
@@ -107,36 +124,6 @@ FILE* findOutput(){
         return stdout;
     }
 
-}
-
-FILE* findInput(int argc, char** argv){
-    int pos_args_count = argc - optind;
-
-    if (pos_args_count < 1)
-    {
-        usage();
-    }
-
-    if (pos_args_count == 1)
-    {
-        return stdin;
-    }
-
-    if ( (argc - optind) == 2 ) { /* number of positional arguments is 2 */
-        inPath = argv[optind+1];
-        FILE* input = fopen(inPath, "r");
-
-        if (input == NULL)
-        {
-            fopenFail();
-        }
-
-        return input;
-        
-    } else { 
-        printf("Not implemented yet!");
-        exit(EXIT_FAILURE);
-    }
 }
 
 char* findKeyword(char** argv){
