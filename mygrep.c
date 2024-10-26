@@ -17,6 +17,9 @@ void usage(void);
 FILE* findInput(int argc, char** argv);
 char* findKeyword(char** argv);
 void fopenFail(void);
+bool grepFile(FILE* input, FILE* output, char* keyord, bool isCaseSensitive);
+bool compareInsensitive(char* keyword, char* line);
+bool compareSensitive(char* keyword, char* line);
 
 // flags
 bool isCaseSensitive = false;
@@ -33,27 +36,41 @@ int main(int argc, char *argv[]){
     FILE* input = findInput(argc, argv);
     char* keyword = findKeyword(argv);
     
+    grepFile(input, output, keyword, isCaseSensitive);
+    
+}
+
+bool grepFile(FILE* input, FILE* output, char* keyword, bool isCaseSensitive){
+    bool (*compare)(char* keyword, char* line);
+    
+    if (isCaseSensitive)
+    {
+        compare = &compareSensitive;
+    } else{
+        compare = &compareInsensitive;
+    }
 
     char* currentLine = malloc(BUFFER_MAX * sizeof(char));
     bool hasNext;
-
     do {
-        // strstr and strcasestr for comparison. tolower toupper
         hasNext = fgets(currentLine, BUFFER_MAX, input) != NULL;
-        bool (*compare)(char*, char*);
-
-        if (isCaseSensitive)
+        if (compare(keyword, currentLine))
         {
-            /* code */
-        } else{
-            
+            fprintf(output, currentLine);
         }
-        
     } 
     while (hasNext); 
     
-    
     free(currentLine);
+}
+
+
+bool compareSensitive(char* keyword, char* line){
+    return strstr(line, keyword) != NULL; 
+}
+
+bool compareInsensitive(char* keyword, char* line){
+    return strcasestr(line, keyword) != NULL;
 }
 
 void parseFlags(int argc, char** argv){
@@ -127,7 +144,7 @@ char* findKeyword(char** argv){
 }
 
 void usage(void){
-    fprintf(stderr, "Usage Message");
+    fprintf(stderr, "Usage Message\n");
     exit(EXIT_FAILURE);
 }
 

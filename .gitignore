@@ -1,3 +1,5 @@
 .vscode
 *.o
 mygrep
+mygrep
+mygrep.o
