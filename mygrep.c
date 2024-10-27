@@ -11,7 +11,7 @@
 
 // forward declarations
 void parseFlags(int argc, char** argv);
-FILE* findOutput();
+FILE* findOutput(void);
 void usage(void);
 char* findKeyword(char** argv);
 void fopenFail(void);
@@ -108,7 +108,7 @@ void parseFlags(int argc, char** argv){
     }
 }
 
-FILE* findOutput(){
+FILE* findOutput(void){
     if (wantsOutFile)
     {
         FILE* outfile = fopen(outPath, "w");
