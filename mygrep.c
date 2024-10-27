@@ -21,7 +21,7 @@ bool compareInsensitive(char* keyword, char* line);
 bool compareSensitive(char* keyword, char* line);
 
 // flags
-bool isCaseSensitive = false;
+bool isCaseSensitive = true;
 bool wantsOutFile = false;
 char* outPath;
 char* inPath;
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
     {
         grepFile(stdin, output, keyword, isCaseSensitive);
     } else{
-        for (int i = optind + 1; i < argc; i++)
+        for (int i = optind + 1; i < argc; i++) // i is optind + 1 because optind is the index of the keyword
         {
             inPath = argv[i];
             FILE* input = fopen(inPath, "r");
@@ -67,18 +67,19 @@ bool grepFile(FILE* input, FILE* output, char* keyword, bool isCaseSensitive){
     }
 
     char* currentLine = malloc(BUFFER_MAX * sizeof(char));
-    bool hasNext;
-    do {
-        hasNext = fgets(currentLine, BUFFER_MAX, input) != NULL;
+    bool hasNext = fgets(currentLine, BUFFER_MAX, input) != NULL;
+    while (hasNext){
         if (compare(keyword, currentLine))
         {
             fprintf(output, currentLine);
         }
+        hasNext = fgets(currentLine, BUFFER_MAX, input) != NULL;
     } 
-    while (hasNext); 
+    
     
     free(currentLine);
     fclose(input);
+    return EXIT_SUCCESS;
 }
 
 
@@ -96,7 +97,7 @@ void parseFlags(int argc, char** argv){
         switch (opt)
         {
         case 'i':
-            isCaseSensitive = true;
+            isCaseSensitive = false;
             break;
         case 'o':
             wantsOutFile = true;
@@ -123,7 +124,6 @@ FILE* findOutput(){
     } else{
         return stdout;
     }
-
 }
 
 char* findKeyword(char** argv){
@@ -131,7 +131,9 @@ char* findKeyword(char** argv){
 }
 
 void usage(void){
-    fprintf(stderr, "Usage Message\n");
+    fprintf(stderr, "SYNOPSIS\n");
+    fprintf(stderr, "\tmygrep [-i] [-o outfile] keyword [file...]\n");
+
     exit(EXIT_FAILURE);
 }
 

@@ -12,4 +12,4 @@ mygrep: mygrep.o
 	$(CC) $(FLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.o main
+	rm -f *.o mygrep
