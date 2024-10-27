@@ -8,7 +8,6 @@
 #define bool int
 #define true 1
 #define false 0
-#define BUFFER_MAX 2000
 
 // forward declarations
 void parseFlags(int argc, char** argv);
@@ -66,16 +65,15 @@ bool grepFile(FILE* input, FILE* output, char* keyword, bool isCaseSensitive){
         compare = &compareInsensitive;
     }
 
-    char* currentLine = malloc(BUFFER_MAX * sizeof(char));
-    bool hasNext = fgets(currentLine, BUFFER_MAX, input) != NULL;
-    while (hasNext){
-        if (compare(keyword, currentLine))
-        {
-            fprintf(output, currentLine);
+    char *currentLine = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    while ((read = getline(&currentLine, &len, input)) != -1) {
+        if (compare(keyword, currentLine)) {
+            fprintf(output, "%s", currentLine);
         }
-        hasNext = fgets(currentLine, BUFFER_MAX, input) != NULL;
-    } 
-    
+    }
     
     free(currentLine);
     fclose(input);
