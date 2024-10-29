@@ -4,46 +4,29 @@
 #include <unistd.h>
 #include <string.h>
 #include <bits/getopt_core.h>
+#include "mygrep.h"
 
 #define bool int
 #define true 1
 #define false 0
 
 // forward declarations
-bool grepFile(FILE *input, FILE *output, char *keyord, bool isCaseSensitive);
-static void parseFlags(int argc, char **argv);
-static FILE *findOutput(void);
+bool grepFile(flags flags);
+static flags parseFlags(int argc, char **argv);
+static FILE *findOutput(flags flags);
 static void usage(void);
 static char *findKeyword(char **argv);
 static void fopenFail(void);
 static bool compareInsensitive(char *keyword, char *line);
 static bool compareSensitive(char *keyword, char *line);
 
-// flags
-bool isCaseSensitive = true;
-bool wantsOutFile = false;
-char *outPath;
-char *inPath;
-
-struct flags
-{
-    bool isCaseSensitive;
-    bool wantsOutFile;
-    char *outPath;
-    char *inPath;
-};
 
 int main(int argc, char *argv[])
 {
 
-    struct flags flags;
-    flags.isCaseSensitive = true;
-    flags.wantsOutFile = false;
-    
-
-    parseFlags(argc, argv);
-    FILE *output = findOutput();
-    char *keyword = findKeyword(argv);
+    flags flags = parseFlags(argc, argv);
+    flags.outStream = findOutput(flags);
+    flags.keyword = findKeyword(argv);
 
     int numberOfPositionalArguments = argc - optind;
 
@@ -53,30 +36,32 @@ int main(int argc, char *argv[])
     }
     else if (numberOfPositionalArguments == 1)
     {
-        grepFile(stdin, output, keyword, isCaseSensitive);
+        flags.inStream = stdin;
+        grepFile(flags);
     }
     else
     {
         for (int i = optind + 1; i < argc; i++) // i is (optind + 1) because optind is the index of the keyword
         {
-            inPath = argv[i];
-            FILE *input = fopen(inPath, "r");
+            flags.inPath = argv[i];
+            FILE *input = fopen(flags.inPath, "r");
             if (input == NULL)
             {
                 fopenFail();
             }
-            grepFile(input, output, keyword, isCaseSensitive);
+            flags.inStream = input;
+            grepFile(flags);
         }
     }
 
-    fclose(output);
+    fclose(flags.outStream);
 }
 
-bool grepFile(FILE *input, FILE *output, char *keyword, bool isCaseSensitive)
+bool grepFile(flags flags)
 {
     bool (*compare)(char *keyword, char *line);
 
-    if (isCaseSensitive)
+    if (flags.isCaseSensitive)
     {
         compare = &compareSensitive;
     }
@@ -89,16 +74,17 @@ bool grepFile(FILE *input, FILE *output, char *keyword, bool isCaseSensitive)
     size_t len = 0;
     ssize_t read;
 
-    while ((read = getline(&currentLine, &len, input)) != -1)
+
+    while ((read = getline(&currentLine, &len, flags.inStream)) != -1)
     {
-        if (compare(keyword, currentLine))
+        if (compare(flags.keyword, currentLine))
         {
-            fprintf(output, "%s", currentLine);
+            fprintf(flags.outStream, "%s", currentLine);
         }
     }
 
     free(currentLine);
-    fclose(input);
+    fclose(flags.inStream);
     return EXIT_SUCCESS;
 }
 
@@ -112,32 +98,37 @@ static bool compareInsensitive(char *keyword, char *line)
     return strcasestr(line, keyword) != NULL;
 }
 
-static void parseFlags(int argc, char **argv)
+static flags parseFlags(int argc, char **argv)
 {
+    flags flags;
+    flags.isCaseSensitive = true;
+    flags.wantsOutFile = false;
+
     int opt;
     while ((opt = getopt(argc, argv, "io:")) != -1)
     {
         switch (opt)
         {
         case 'i':
-            isCaseSensitive = false;
+            flags.isCaseSensitive = false;
             break;
         case 'o':
-            wantsOutFile = true;
-            outPath = optarg;
+            flags.wantsOutFile = true;
+            flags.outPath = optarg;
             break;
         default:
             usage();
             break;
         }
     }
+    return flags;
 }
 
-static FILE *findOutput(void)
+static FILE *findOutput(flags flags)
 {
-    if (wantsOutFile)
+    if (flags.wantsOutFile)
     {
-        FILE *outfile = fopen(outPath, "w");
+        FILE *outfile = fopen(flags.outPath, "w");
 
         if (outfile == NULL)
         {
@@ -152,6 +143,7 @@ static FILE *findOutput(void)
     }
 }
 
+// has to be called after parseFlags() so optind is at the correct index
 static char *findKeyword(char **argv)
 {
     return argv[optind];
