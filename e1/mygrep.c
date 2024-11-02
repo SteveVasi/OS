@@ -71,8 +71,8 @@ bool grepFile(flags flags)
     }
 
     char *currentLine = NULL;
-    size_t len = 0;
-    ssize_t read;
+    size_t len = 0; // size is unsigned 
+    ssize_t read; // ssize is signed 
 
 
     while ((read = getline(&currentLine, &len, flags.inStream)) != -1)
