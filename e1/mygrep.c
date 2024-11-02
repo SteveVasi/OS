@@ -75,7 +75,7 @@ bool grepFile(flags flags)
     ssize_t read; // ssize is signed 
 
 
-    while ((read = getline(&currentLine, &len, flags.inStream)) != -1)
+    while ((read = getline(&currentLine, &len, flags.inStream)) != -1) //getline conveniently allocates memory for us
     {
         if (compare(flags.keyword, currentLine))
         {
@@ -95,7 +95,7 @@ static bool compareSensitive(char *keyword, char *line)
 
 static bool compareInsensitive(char *keyword, char *line)
 {
-    return strcasestr(line, keyword) != NULL;
+    return strcasestr(line, keyword) != NULL; // this line gives a compiler warning because it is a comparison between an integer and pointer, but man 3 says that this function returns NULL upon not finding the keyword.
 }
 
 static flags parseFlags(int argc, char **argv)
