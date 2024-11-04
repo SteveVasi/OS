@@ -24,7 +24,7 @@ static bool compareSensitive(char *keyword, char *line);
 int main(int argc, char *argv[])
 {
 
-    flags flags = parseFlags(argc, argv);
+    flags flags = parseFlags(argc, argv); // rename to options
     flags.outStream = findOutput(flags);
     flags.keyword = findKeyword(argv);
 
