@@ -1,8 +1,16 @@
 #include <stdio.h>
+#include <getopt.h>
 
 void usage(void);
 
-int main(int argc, char** argv){
+typedef struct edge_t
+{
+    int v1;
+    int v2;
+} edge;
+
+int main(int argc, char **argv)
+{
     usage();
 
     // each positional argument is one edge
@@ -11,9 +19,33 @@ int main(int argc, char** argv){
     // generator repeatedly generates a random solution and writes it to the circular buffer
     // it writes the edge sets to the circular buffer one at a time.
     // therefore a set of edges is a single element of the circular buffer
+
+    int edgeCount = argc - optind; // double check if this actually correct
+    edge edges[] = malloc(edgeCount * sizeof(edge));
+
+    int j = 0;
+    for (size_t i = optind; i < argc; i++, j++)
+    {
+        edges[j] = getEdge(argv[i]);
+    }
+
+    free(edges);
 }
 
-void usage(void){
+edge getEdge(char *argument)
+{
+    // the format of the argument must be: two integers separated by a dash
+    unsigned int v1;
+    unsigned int v2;
+    if (sscanf(argument, "%u-%u", &v1, &v2) == 2)
+    {
+        edge e = {v1, v2};
+        return e;
+    }
+}
+
+void usage(void)
+{
     printf("SYNOPSIS:\n");
     printf("    generator EDGE1...\n");
     printf("EXAMPLE");
