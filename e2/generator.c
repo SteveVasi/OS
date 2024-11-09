@@ -1,13 +1,8 @@
 #include <stdio.h>
 #include <getopt.h>
+#include "edge.h"
 
 void usage(void);
-
-typedef struct edge_t
-{
-    int v1;
-    int v2;
-} edge;
 
 int main(int argc, char **argv)
 {
@@ -20,11 +15,11 @@ int main(int argc, char **argv)
     // it writes the edge sets to the circular buffer one at a time.
     // therefore a set of edges is a single element of the circular buffer
 
-    int edgeCount = argc - optind; // double check if this actually correct
+    int edgeCount = argc - 1;
     edge edges[] = malloc(edgeCount * sizeof(edge));
 
     int j = 0;
-    for (size_t i = optind; i < argc; i++, j++)
+    for (size_t i = 1; i < argc; i++, j++)
     {
         edges[j] = getEdge(argv[i]);
     }
@@ -42,6 +37,11 @@ edge getEdge(char *argument)
         edge e = {v1, v2};
         return e;
     }
+    edgeParsingError();
+}
+
+void edgeParsingError(void){
+    // todo
 }
 
 void usage(void)

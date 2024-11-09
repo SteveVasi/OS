@@ -4,10 +4,10 @@ FLAGS = -std=c99 -Wall -pedantic -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_SVID_SOURCE 
 
 all: generator supervisor
 
-generator: generator.o
+generator: generator.o circularBuffer.o
 	$(CC) $(FLAGS) -o $@ $^
 
-supervisor: supervisor.o
+supervisor: supervisor.o circularBuffer.o
 	$(CC) $(FLAGS) -o $@ $^
 
 %.o: %.c %.h

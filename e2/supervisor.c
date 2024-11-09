@@ -4,11 +4,19 @@
 #include <getopt.h>
 #include <signal.h>
 
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "circularBuffer.h"
+
 #define bool int
 
 void usage(void);
+void initCircularBuffer(circularBuffer *circularBuffer);
 
 volatile sig_atomic_t quit = 0;
+
 
 int main(int argc, char **argv)
 {
@@ -36,9 +44,6 @@ int main(int argc, char **argv)
         }
     }
 
-    // limit is for the number of generated solutions
-    // delay is for reading the first solution from the buffer after initialization
-
     // every time a better solution is found, the supervisor writes it to stderr
     // if generator writes a solution with 0 edges to circular buffer, then print("The graph is 3-colorable!") to stdout
 
@@ -51,11 +56,30 @@ int main(int argc, char **argv)
     // processes communicate with eachother with the circular buffer which uses shared semaphores and shared memory
 
     // supervisor sets up shared memory, semaphores and circular buffer
-    //////////////////////
+
 
     volatile unsigned int solutions_count = 0;
 
     // initializations
+
+  
+
+    int shmfd = shm_open(CIRCULAR_ARRAY_BUFFER, O_RDWR | O_CREAT, 0600);
+    if(shmfd == -1){
+        shmError();
+    }
+
+    int truncation = ftruncate(shmfd, sizeof(circularBuffer));
+    if (truncation < 0)
+    {
+        shmError();
+    }
+    
+    
+    //myshm = mmap(NULL, sizeof(circularBuffer), PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
+    
+    circularBuffer circularBuffer;
+    initCircularbuffer(&circularBuffer);
 
     sleep(delay);
 
@@ -66,7 +90,14 @@ int main(int argc, char **argv)
         /* code */
     }
 
+    int err1 = close(shmfd);
+    int err2 = shm_unlink(CIRCULAR_ARRAY_BUFFER);
     _exit(1);
+}
+
+
+void shmError(void){
+    // TODO perror()
 }
 
 
@@ -87,3 +118,4 @@ void usage(void)
     printf("SYNOPSIS:\n");
     printf("    supervisor [-n limit] [-w delay]\n");
 }
+

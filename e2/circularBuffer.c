@@ -1,4 +1,14 @@
+#include <fcntl.h>
 #include <stdio.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "edge.h"
+#include "circularBuffer.h"
+
+
+
+// this is the "server", generator and supervisor are clients
 
 // is essentially an array of the elements we want to pass through
 // elements are written successively and starts from the beginning when it ends (FIFO)
@@ -7,10 +17,8 @@
 // one semaphore for tracking free space (value corresponds to the amount of free space in buffer array). its initialized to size of buffer
 // and one semaphore for tracking used space (value corresponds to the amount of used space in buffer array). its initialized to 0
 
-enum { n = 10};
 
-int buffer[n]; // only (n-1) elements can be stored at a given time
-int writeIndex = 0;
-int readIndex = 0;
+// each element in the buffer is a set of edges!
 
+// set up shared memory
 
