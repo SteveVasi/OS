@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-
 #define bool int
 
 void usage(void);
@@ -39,21 +38,30 @@ int main(int argc, char **argv)
     int limit = INT_MAX;
     unsigned int delay = 0;
     int opt;
+    int allowedArgCount = 0;
     while ((opt = getopt(argc, argv, "n:w:")) != -1)
     {
         switch (opt)
         {
         case 'n':
             limit = atoi(optarg);
+            allowedArgCount += 2;
             break;
         case 'w':
             delay = atoi(optarg);
+            allowedArgCount += 2;
             break;
         default:
             usage();
             exit(EXIT_FAILURE);
             break;
         }
+    }
+
+    if ((argc - 1) != allowedArgCount)
+    {
+        usage();
+        exit(EXIT_FAILURE);
     }
 
     // every time a better solution is found, the supervisor writes it to stderr
@@ -94,7 +102,7 @@ circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor)
                                           MAP_SHARED,
                                           sharedMemoryFileDescriptor,
                                           0);
-    if (circularBuffer != 0)
+    if (circularBuffer == MAP_FAILED)
     {
         perror("Memory mapping failed");
         _exit(EXIT_FAILURE);

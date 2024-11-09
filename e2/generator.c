@@ -51,6 +51,6 @@ void usage(void)
 {
     printf("SYNOPSIS:\n");
     printf("    generator EDGE1...\n");
-    printf("EXAMPLE");
-    printf("    generator 0-1 0-2 0-3 1-2 1-3 2-3");
+    printf("EXAMPLE\n");
+    printf("    generator 0-1 0-2 0-3 1-2 1-3 2-3\n");
 }
