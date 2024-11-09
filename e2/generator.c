@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <getopt.h>
+#include <stdlib.h>
 #include "edge.h"
 
 void usage(void);
+edge getEdge(char *argument);
+void edgeParsingError(void);
 
 int main(int argc, char **argv)
 {
@@ -16,7 +19,7 @@ int main(int argc, char **argv)
     // therefore a set of edges is a single element of the circular buffer
 
     int edgeCount = argc - 1;
-    edge edges[] = malloc(edgeCount * sizeof(edge));
+    edge *edges = malloc(edgeCount * sizeof(edge));
 
     int j = 0;
     for (size_t i = 1; i < argc; i++, j++)

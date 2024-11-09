@@ -1,17 +1,18 @@
 
 CC = gcc
-FLAGS = -std=c99 -Wall -pedantic -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_SVID_SOURCE -D_POSIX_C_SOURCE=200809L -g
+CFLAGS = -std=c99 -Wall -pedantic -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_SVID_SOURCE -D_POSIX_C_SOURCE=200809L -g
+LDFLAGS = -pthread -lrt
 
 all: generator supervisor
 
-generator: generator.o circularBuffer.o
-	$(CC) $(FLAGS) -o $@ $^
+generator: generator.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-supervisor: supervisor.o circularBuffer.o
-	$(CC) $(FLAGS) -o $@ $^
+supervisor: supervisor.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c %.h
-	$(CC) $(FLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean: 
 	rm -f *.o generator supervisor
