@@ -17,7 +17,7 @@
 void usage(void);
 circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor);
 int openSharedMemory();
-void truncateSharedMemory(int sharedMemoryFileDescriptor);
+void truncateSharedMemory(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
 bool shouldRun(int solutions, int maxSolutions);
 void handleSignal(int signal);
 void exitOnSemError(void);
@@ -77,9 +77,10 @@ int main(int argc, char **argv)
 
     // supervisor sets up shared memory, semaphores and circular buffer
 
+    circularBuffer *circularBuffer;
     int sharedMemoryFileDescriptor = openSharedMemory();
-    truncateSharedMemory(sharedMemoryFileDescriptor);
-    circularBuffer *circularBuffer = memoryMapBuffer(sharedMemoryFileDescriptor);
+    truncateSharedMemory(sharedMemoryFileDescriptor, circularBuffer);
+    circularBuffer = memoryMapBuffer(sharedMemoryFileDescriptor);
     initCircularBuffer(circularBuffer);
 
     sleep(delay);
@@ -89,15 +90,17 @@ int main(int argc, char **argv)
     {
     }
 
+    cleanUp(circularBuffer);
     int err1 = close(sharedMemoryFileDescriptor);
     int err2 = shm_unlink(CIRCULAR_ARRAY_BUFFER);
+    
     _exit(1);
 }
 
 circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor)
 {
     circularBuffer *circularBuffer = mmap(NULL,
-                                          sizeof(circularBuffer),
+                                          sizeof(*circularBuffer),
                                           PROT_READ | PROT_WRITE,
                                           MAP_SHARED,
                                           sharedMemoryFileDescriptor,
@@ -121,9 +124,9 @@ int openSharedMemory()
     return shm_fd;
 }
 
-void truncateSharedMemory(int sharedMemoryFileDescriptor)
+void truncateSharedMemory(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer)
 {
-    int truncation = ftruncate(sharedMemoryFileDescriptor, sizeof(circularBuffer));
+    int truncation = ftruncate(sharedMemoryFileDescriptor, sizeof(*circularBuffer));
     if (truncation < 0)
     {
         perror("Failed to truncate shared memory");
@@ -134,7 +137,7 @@ void truncateSharedMemory(int sharedMemoryFileDescriptor)
 
 bool shouldRun(int solutions, int maxSolutions)
 {
-    return (solutions <= maxSolutions) && (quit != 0);
+    return (solutions <= maxSolutions) && (quit == 0);
 }
 
 void handleSignal(int signal)
@@ -168,9 +171,9 @@ void initCircularBuffer(circularBuffer *circularBuffer)
 {
     circularBuffer->writeIndex = 0;
     circularBuffer->readIndex = 0;
-    circularBuffer->freeSpace = sem_open(SEM_FREE_SPACE, O_CREAT | O_EXCL, 0600, BUFFER_SIZE);
-    circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, O_CREAT | O_EXCL, 0600, 0);
-    circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, O_CREAT | O_EXCL, 0600, 1);
+    circularBuffer->freeSpace = sem_open(SEM_FREE_SPACE, O_CREAT, 777, BUFFER_SIZE);
+    circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, O_CREAT, 777, 0);
+    circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, O_CREAT, 777, 1);
     checkForSemError(circularBuffer);
 }
 
@@ -203,7 +206,7 @@ edgeSet readFromBuffer(circularBuffer *circularBuffer)
 
 void cleanUp(circularBuffer *circularBuffer)
 {
-    int err4 = munmap(circularBuffer, sizeof(circularBuffer));
+    int err4 = munmap(circularBuffer, sizeof(*circularBuffer));
     int err1 = sem_close(circularBuffer->freeSpace);
     int err2 = sem_close(circularBuffer->usedSpace);
     int err3 = sem_close(circularBuffer->writeMutex);
