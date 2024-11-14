@@ -86,6 +86,7 @@ int main(int argc, char **argv)
     sleep(delay);
     volatile unsigned int solutions_count = 0;
 
+    edgeSet bestSolution;
     while (shouldRun(solutions_count, limit))
     {
     }
@@ -175,19 +176,6 @@ void initCircularBuffer(circularBuffer *circularBuffer)
     circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, O_CREAT, 777, 0);
     circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, O_CREAT, 777, 1);
     checkForSemError(circularBuffer);
-}
-
-void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer)
-{
-    int err1 = sem_wait(circularBuffer->freeSpace);
-    int err2 = sem_wait(circularBuffer->writeMutex);
-
-    circularBuffer->buffer[circularBuffer->writeIndex] = *edgeSet;
-    (*circularBuffer).writeIndex = (circularBuffer->writeIndex + 1) % BUFFER_SIZE;
-
-    int err3 = sem_post(circularBuffer->writeMutex);
-    int err4 = sem_post(circularBuffer->usedSpace);
-    // TODO error handling
 }
 
 edgeSet readFromBuffer(circularBuffer *circularBuffer)
