@@ -4,6 +4,8 @@
 #include "edge.h"
 #include "circularBuffer.h"
 
+#define bool int
+
 void usage(void);
 edge parseEdge(char *argument);
 void edgeParsingError(void);
@@ -33,21 +35,33 @@ int main(int argc, char **argv)
 
 edge parseEdge(char *argument)
 {
-    // the format of the argument must be: two integers separated by a dash
+    // the format of the argument must be: two integers separated by a dash. ints are allowed to have a sign
     int n1;
     int n2;
     if (sscanf(argument, "%d-%d", &n1, &n2) == 2)
     {
-        vertex v1 = {n1, randomColor()};
-        vertex v2 = {n2, randomColor()};
+        vertex v1 = {n1};
+        vertex v2 = {n2};
         edge e = {v1, v2};
         return e;
     }
     edgeParsingError();
 }
 
-edgeSet selectOnlyValidEdges(){
-    
+static edgeSet selectOnlyValidEdges(edgeSet *edgeSet){
+    edgeSet valids = malloc(sizeof(*edgeSet));
+    int counter = 0;
+    for(int i = 0; i < edgeSet->edgeCount; i++){
+        if(areValid(edgeSet->edgeArray[i])){
+            valids[counter] = edgeSet->edgeArray[i];
+            counter++;
+        }
+    }
+    // TODO dont forget to free valids
+}
+
+static bool areValid(edge *edge){
+    return edge->v1.COLOR != edge->v2.COLOR;
 }
 
 static COLOR randomColor(void){
