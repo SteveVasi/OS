@@ -6,8 +6,14 @@ typedef struct edge_t
 
 typedef struct vertex_t {
     unsigned int vertex_number;
-    COLOR;
 } vertex;
+
+typedef struct colored_vertex_t
+{
+    vertex v;
+    COLOR;
+} coloredVertex;
+
 
 typedef enum {
     RED,

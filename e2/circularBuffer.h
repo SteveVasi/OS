@@ -21,7 +21,7 @@ typedef struct
 typedef struct {
     edge edgeArray[MAX_EDGES];
     int edgeCount;
-    vertex vertexArray[MAX_EDGES * 2];
+    coloredVertex vertexArray[MAX_EDGES * 2];
     int vertexCount;
     /*
         The formula to determine the number of edges e in a complete graph is given by e = n * ( n − 1 )/ 2 

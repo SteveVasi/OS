@@ -60,6 +60,10 @@ static edgeSet selectOnlyValidEdges(edgeSet *edgeSet){
     // TODO dont forget to free valids
 }
 
+static void colorGraph(graph graph){
+    // todo
+}
+
 static bool areValid(edge *edge){
     return edge->v1.COLOR != edge->v2.COLOR;
 }
