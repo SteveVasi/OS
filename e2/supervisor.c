@@ -15,7 +15,7 @@
 #define bool int
 
 void usage(void);
-circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor);
+void *memoryMapBuffer(int sharedMemoryFileDescriptor, *circularBuffer circularBuffer)
 int openSharedMemory();
 void truncateSharedMemory(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
 bool shouldRun(int solutions, int maxSolutions);
@@ -39,23 +39,31 @@ int main(int argc, char **argv)
     unsigned int delay = 0;
     int opt;
     int allowedArgCount = 0;
+    bool flag_n = 0;
+    bool flag_w = 0;
     while ((opt = getopt(argc, argv, "n:w:")) != -1)
     {
         switch (opt)
         {
         case 'n':
             limit = atoi(optarg);
-            allowedArgCount += 2;
+            flag_n = 1;
             break;
         case 'w':
             delay = atoi(optarg);
-            allowedArgCount += 2;
+            flag_w = 1;
             break;
         default:
             usage();
             exit(EXIT_FAILURE);
             break;
         }
+    }
+
+    if(flag_n){
+        allowedArgCount += 2;
+    }if(flag_w){
+        allowedArgCount += 2;
     }
 
     if ((argc - 1) != allowedArgCount)
@@ -80,7 +88,7 @@ int main(int argc, char **argv)
     circularBuffer *circularBuffer;
     int sharedMemoryFileDescriptor = openSharedMemory();
     truncateSharedMemory(sharedMemoryFileDescriptor, circularBuffer);
-    circularBuffer = memoryMapBuffer(sharedMemoryFileDescriptor);
+    memoryMapBuffer(sharedMemoryFileDescriptor, circularBuffer);
     initCircularBuffer(circularBuffer);
 
     sleep(delay);
@@ -98,7 +106,7 @@ int main(int argc, char **argv)
     _exit(1);
 }
 
-circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor)
+void *memoryMapBuffer(int sharedMemoryFileDescriptor, *circularBuffer circularBuffer)
 {
     circularBuffer *circularBuffer = mmap(NULL,
                                           sizeof(*circularBuffer),

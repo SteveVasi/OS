@@ -30,6 +30,9 @@ int main(int argc, char **argv)
         edges[j] = parseEdge(argv[i]);
     }
 
+    // bool shouldRun = TRUE;
+    // while(shouldRun){}
+
     free(edges);
 }
 
@@ -48,7 +51,8 @@ edge parseEdge(char *argument)
     edgeParsingError();
 }
 
-static edgeSet selectOnlyValidEdges(edgeSet *edgeSet){
+static edgeSet selectOnlyValidEdges(edgeSet *edges){
+    /*
     edgeSet valids = malloc(sizeof(*edgeSet));
     int counter = 0;
     for(int i = 0; i < edgeSet->edgeCount; i++){
@@ -56,8 +60,10 @@ static edgeSet selectOnlyValidEdges(edgeSet *edgeSet){
             valids[counter] = edgeSet->edgeArray[i];
             counter++;
         }
-    }
-    // TODO dont forget to free valids
+    }*/
+    // TODO dont forget to free valid;
+    edgeSet s;
+    return s;
 }
 
 static void colorGraph(graph graph){
@@ -65,7 +71,8 @@ static void colorGraph(graph graph){
 }
 
 static bool areValid(edge *edge){
-    return edge->v1.COLOR != edge->v2.COLOR;
+    // todo
+    return 1;
 }
 
 static COLOR randomColor(void){
