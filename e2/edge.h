@@ -27,7 +27,7 @@ typedef struct colored_vertex_t {
     COLOR color;
 } coloredVertex;
 
-typedef struct edge_set_v {
+typedef struct edge_set_t {
     edge edgeArray[MAX_EDGES];
     int edgeCount;
 } edgeSet;
@@ -37,7 +37,7 @@ typedef struct colored_vertex_set_t {
     int coloredVertexCount;
 } coloredVertexSet;
 
-typedef struct {
+typedef struct graph_t {
     edgeSet edgeSet;
     coloredVertexSet coloredVertexSet;
     coloredVertex vertexArray[MAX_VERTICES];

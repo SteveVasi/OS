@@ -14,7 +14,7 @@
 /*
     only (n-1) elements can be stored at a given time
 */
-typedef struct
+typedef struct circular_buffer_t
 {
     edgeSet buffer[BUFFER_SIZE];
     int writeIndex;

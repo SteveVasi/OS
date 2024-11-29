@@ -15,14 +15,14 @@
 #define bool int
 
 void usage(void);
-void *memoryMapBuffer(int sharedMemoryFileDescriptor, *circularBuffer circularBuffer)
+circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
 int openSharedMemory();
 void truncateSharedMemory(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
 bool shouldRun(int solutions, int maxSolutions);
 void handleSignal(int signal);
 void exitOnSemError(void);
 void checkForSemError(circularBuffer *circularBuffer);
-void initCircularBuffer(circularBuffer *circularBuffer);
+void initSharedBuffer(circularBuffer *circularBuffer);
 void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer);
 edgeSet readFromBuffer(circularBuffer *circularBuffer);
 void cleanUp(circularBuffer *circularBuffer);
@@ -85,41 +85,43 @@ int main(int argc, char **argv)
 
     // supervisor sets up shared memory, semaphores and circular buffer
 
-    circularBuffer *circularBuffer;
+    circularBuffer buffer;
+    initSharedBuffer(&buffer);
+    
     int sharedMemoryFileDescriptor = openSharedMemory();
-    truncateSharedMemory(sharedMemoryFileDescriptor, circularBuffer);
-    memoryMapBuffer(sharedMemoryFileDescriptor, circularBuffer);
-    initCircularBuffer(circularBuffer);
+    truncateSharedMemory(sharedMemoryFileDescriptor, &buffer);
+    circularBuffer *sharedBuffer = memoryMapBuffer(sharedMemoryFileDescriptor, &buffer);
 
     sleep(delay);
     volatile unsigned int solutions_count = 0;
 
-    edgeSet bestSolution;
+    // edgeSet bestSolution;
     while (shouldRun(solutions_count, limit))
     {
     }
 
-    cleanUp(circularBuffer);
-    int err1 = close(sharedMemoryFileDescriptor);
-    int err2 = shm_unlink(CIRCULAR_ARRAY_BUFFER);
-    
+    // cleanUpAllResources:
+    cleanUp(&buffer);
+    close(sharedMemoryFileDescriptor); // TODO error handling
+    shm_unlink(CIRCULAR_ARRAY_BUFFER); // TODO error handling
+        
     _exit(1);
 }
 
-void *memoryMapBuffer(int sharedMemoryFileDescriptor, *circularBuffer circularBuffer)
+circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *cb)
 {
-    circularBuffer *circularBuffer = mmap(NULL,
-                                          sizeof(*circularBuffer),
+    circularBuffer *sharedBuffer = mmap(NULL,
+                                          sizeof(*cb),
                                           PROT_READ | PROT_WRITE,
                                           MAP_SHARED,
                                           sharedMemoryFileDescriptor,
                                           0);
-    if (circularBuffer == MAP_FAILED)
+    if (sharedBuffer == MAP_FAILED)
     {
         perror("Memory mapping failed");
         _exit(EXIT_FAILURE);
     }
-    return circularBuffer;
+    return sharedBuffer;
 }
 
 int openSharedMemory()
@@ -151,6 +153,7 @@ bool shouldRun(int solutions, int maxSolutions)
 
 void handleSignal(int signal)
 {
+    // goto cleanUpAllResources; doesnt work :(
     quit = 1;
 }
 
@@ -176,7 +179,7 @@ void checkForSemError(circularBuffer *circularBuffer)
     }
 }
 
-void initCircularBuffer(circularBuffer *circularBuffer)
+void initSharedBuffer(circularBuffer *circularBuffer)
 {
     circularBuffer->writeIndex = 0;
     circularBuffer->readIndex = 0;
@@ -190,24 +193,24 @@ edgeSet readFromBuffer(circularBuffer *circularBuffer)
 {
     edgeSet result;
 
-    int err1 = sem_wait(circularBuffer->usedSpace);
+    sem_wait(circularBuffer->usedSpace);  // TODO error handling
 
     result = circularBuffer->buffer[circularBuffer->readIndex];
     circularBuffer->readIndex = (circularBuffer->readIndex + 1) % BUFFER_SIZE;
 
-    int err2 = sem_post(circularBuffer->freeSpace);
+    sem_post(circularBuffer->freeSpace);  // TODO error handling
     // TODO error handling
     return result;
 }
 
 void cleanUp(circularBuffer *circularBuffer)
 {
-    int err4 = munmap(circularBuffer, sizeof(*circularBuffer));
-    int err1 = sem_close(circularBuffer->freeSpace);
-    int err2 = sem_close(circularBuffer->usedSpace);
-    int err3 = sem_close(circularBuffer->writeMutex);
-    int err5 = sem_unlink(SEM_FREE_SPACE);
-    int err6 = sem_unlink(SEM_USED_SPACE);
-    int err7 = sem_unlink(SEM_WRITE_MUTEX);
-    // TODO error handling
+    munmap(circularBuffer, sizeof(*circularBuffer));
+    sem_close(circularBuffer->freeSpace);
+    sem_close(circularBuffer->usedSpace);
+    sem_close(circularBuffer->writeMutex);
+    sem_unlink(SEM_FREE_SPACE);
+    sem_unlink(SEM_USED_SPACE);
+    sem_unlink(SEM_WRITE_MUTEX);
+    // TODO error handling for munmap, sem_close  and sem_unlink
 }
