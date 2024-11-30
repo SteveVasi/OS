@@ -5,6 +5,8 @@
 #include "circularBuffer.h"
 
 #define bool int
+#define Coco war hier
+
 
 void usage(void);
 edge parseEdge(char *argument);
@@ -28,6 +30,7 @@ int main(int argc, char **argv)
     for (size_t i = 1; i < argc; i++, j++)
     {
         edges[j] = parseEdge(argv[i]);
+        printEdge(edges[j]);
     }
 
     // bool shouldRun = TRUE;
@@ -51,7 +54,7 @@ edge parseEdge(char *argument)
     edgeParsingError();
 }
 
-static edgeSet selectOnlyValidEdges(edgeSet *edges){
+edgeSet selectOnlyValidEdges(edgeSet *edges){
     /*
     edgeSet valids = malloc(sizeof(*edgeSet));
     int counter = 0;
@@ -98,19 +101,6 @@ static COLOR randomColor(void){
 void edgeParsingError(void){
     usage();
     exit(EXIT_FAILURE);
-}
-
-static void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer)
-{
-    int err1 = sem_wait(circularBuffer->freeSpace);
-    int err2 = sem_wait(circularBuffer->writeMutex);
-
-    circularBuffer->buffer[circularBuffer->writeIndex] = *edgeSet;
-    (*circularBuffer).writeIndex = (circularBuffer->writeIndex + 1) % BUFFER_SIZE;
-
-    int err3 = sem_post(circularBuffer->writeMutex);
-    int err4 = sem_post(circularBuffer->usedSpace);
-    // TODO error handling
 }
 
 void usage(void)

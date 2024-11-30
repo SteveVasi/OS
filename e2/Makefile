@@ -5,10 +5,10 @@ LDFLAGS = -pthread -lrt
 
 all: generator supervisor
 
-generator: generator.o
+generator: generator.o circularBuffer.o edge.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-supervisor: supervisor.o
+supervisor: supervisor.o circularBuffer.o  edge.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c %.h

@@ -53,4 +53,6 @@ typedef struct graph_t {
 
 } graph;
 
+void printEdge(edge e);
+
 #endif

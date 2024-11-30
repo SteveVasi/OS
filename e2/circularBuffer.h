@@ -24,5 +24,13 @@ typedef struct circular_buffer_t
     sem_t *writeMutex;
 } circularBuffer;
 
+circularBuffer* memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
+int openSharedMemory();
+int truncateSharedMemory(int sharedMemoryFileDescriptor);
+void exitOnSemError(void);
+void checkForSemError(circularBuffer *circularBuffer);
+void initSharedBuffer(circularBuffer *circularBuffer);
+void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer);
+edgeSet readFromBuffer(circularBuffer *circularBuffer);
 
 #endif // CIRCULARBUFFER_H
