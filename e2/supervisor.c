@@ -17,7 +17,7 @@
 void usage(void);
 circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
 int openSharedMemory();
-void truncateSharedMemory(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
+int truncateSharedMemory(int sharedMemoryFileDescriptor);
 bool shouldRun(int solutions, int maxSolutions);
 void handleSignal(int signal);
 void exitOnSemError(void);
@@ -31,6 +31,9 @@ volatile sig_atomic_t quit = 0;
 
 int main(int argc, char **argv)
 {
+    // https://youtu.be/AKJhThyTmQw?si=JGGSNW6eBqxMThib
+    // goto (further down but not up!)
+    int return_value = 0;
 
     signal(SIGINT, handleSignal);
     signal(SIGTERM, handleSignal);
@@ -85,12 +88,12 @@ int main(int argc, char **argv)
 
     // supervisor sets up shared memory, semaphores and circular buffer
 
-    circularBuffer buffer;
-    initSharedBuffer(&buffer);
+    
     
     int sharedMemoryFileDescriptor = openSharedMemory();
-    truncateSharedMemory(sharedMemoryFileDescriptor, &buffer);
-    circularBuffer *sharedBuffer = memoryMapBuffer(sharedMemoryFileDescriptor, &buffer);
+    truncateSharedMemory(sharedMemoryFileDescriptor);
+    circularBuffer *sharedBuffer;
+    sharedBuffer = memoryMapBuffer(sharedMemoryFileDescriptor, sharedBuffer); // error handling check / check return value for MAP_FAILED
 
     sleep(delay);
     volatile unsigned int solutions_count = 0;
@@ -100,11 +103,11 @@ int main(int argc, char **argv)
     {
     }
 
-    // cleanUpAllResources:
-    cleanUp(&buffer);
+    cleanUpAllResources:
     close(sharedMemoryFileDescriptor); // TODO error handling
     shm_unlink(CIRCULAR_ARRAY_BUFFER); // TODO error handling
-        
+    
+    return return_value;
     _exit(1);
 }
 
@@ -119,7 +122,7 @@ circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *
     if (sharedBuffer == MAP_FAILED)
     {
         perror("Memory mapping failed");
-        _exit(EXIT_FAILURE);
+        return MAP_FAILED;
     }
     return sharedBuffer;
 }
@@ -135,15 +138,16 @@ int openSharedMemory()
     return shm_fd;
 }
 
-void truncateSharedMemory(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer)
+int truncateSharedMemory(int sharedMemoryFileDescriptor)
 {
-    int truncation = ftruncate(sharedMemoryFileDescriptor, sizeof(*circularBuffer));
+    int truncation = ftruncate(sharedMemoryFileDescriptor, sizeof(circularBuffer));
     if (truncation < 0)
     {
         perror("Failed to truncate shared memory");
-        close(sharedMemoryFileDescriptor);
-        _exit(EXIT_FAILURE);
+        // return -1 and then caller has to check return value 
+        return truncation;
     }
+    return EXIT_SUCCESS;
 }
 
 bool shouldRun(int solutions, int maxSolutions)
@@ -203,7 +207,7 @@ edgeSet readFromBuffer(circularBuffer *circularBuffer)
     return result;
 }
 
-void cleanUp(circularBuffer *circularBuffer)
+void cleanUpSemaphores(circularBuffer *circularBuffer)
 {
     munmap(circularBuffer, sizeof(*circularBuffer));
     sem_close(circularBuffer->freeSpace);
