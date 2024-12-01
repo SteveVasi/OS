@@ -5,16 +5,15 @@
 #define BUFFER_SIZE (10)
 #define MAX_VERTICES (MAX_EDGES * 2)
 
+// TYPE DEFS
+
+#define vertex unsigned int
 
 typedef enum {
     RED,
     GREEN,
     BLUE
 } COLOR;
-
-typedef struct vertex_t {
-    unsigned int vertex_number;
-} vertex;
 
 typedef struct edge_t {
     vertex v1;
@@ -54,5 +53,6 @@ typedef struct graph_t {
 } graph;
 
 void printEdge(edge e);
+void printEdgeSet(edgeSet *es);
 
 #endif

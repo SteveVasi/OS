@@ -11,6 +11,7 @@
 void usage(void);
 edge parseEdge(char *argument);
 void edgeParsingError(void);
+edgeSet* parseAllEdges(int edgeCount, char** argv);
 
 int main(int argc, char **argv)
 {
@@ -24,20 +25,30 @@ int main(int argc, char **argv)
     // therefore a set of edges is a single element of the circular buffer
 
     int edgeCount = argc - 1;
-    edge *edges = malloc(edgeCount * sizeof(edge));
+    edgeSet *edges = parseAllEdges(edgeCount, argv);
+
+
+    graph g;
+
+
+
+    free(edges);
+}
+
+edgeSet* parseAllEdges(int edgeCount, char** argv)
+{
+    edgeSet *set = malloc(sizeof(edgeSet));
+    edge *edges = set->edgeArray;
 
     int j = 0;
-    for (size_t i = 1; i < argc; i++, j++)
+    for (size_t i = 1; i < edgeCount; i++, j++)
     {
         edges[j] = parseEdge(argv[i]);
         printEdge(edges[j]);
     }
-
-    // bool shouldRun = TRUE;
-    // while(shouldRun){}
-
-    free(edges);
+    return edges;
 }
+
 
 edge parseEdge(char *argument)
 {
@@ -99,6 +110,7 @@ static COLOR randomColor(void){
 }
 
 void edgeParsingError(void){
+    perror("Edge parsing error");
     usage();
     exit(EXIT_FAILURE);
 }
