@@ -9,7 +9,7 @@
 
 
 void usage(void);
-edge parseEdge(char *argument);
+int parseEdge(char *argument, edge *e);
 void edgeParsingError(void);
 edgeSet* parseAllEdges(int edgeCount, char** argv);
 
@@ -24,33 +24,60 @@ int main(int argc, char **argv)
     // it writes the edge sets to the circular buffer one at a time.
     // therefore a set of edges is a single element of the circular buffer
 
-    int edgeCount = argc - 1;
-    edgeSet *edges = parseAllEdges(edgeCount, argv);
+    edgeSet *edges = parseAllEdges(argc, argv);
 
 
-    graph g;
-
+    graph *g;
+    constructGraph(edges, g);
 
 
     free(edges);
 }
 
-edgeSet* parseAllEdges(int edgeCount, char** argv)
-{
-    edgeSet *set = malloc(sizeof(edgeSet));
-    edge *edges = set->edgeArray;
+void constructGraph(edgeSet *set, graph *g){
+    g->edgeSet = set;
+}
 
-    int j = 0;
-    for (size_t i = 1; i < edgeCount; i++, j++)
-    {
-        edges[j] = parseEdge(argv[i]);
-        printEdge(edges[j]);
+void getVertexSet(edgeSet *set, vertexSet *vertices){
+    // ideally you would use a hash map for this to have a better time complexity but we dont care about that here
+    memset(vertices->vertexArray, -1, MAX_VERTICES);
+    for(int i = 0; i < set->edgeCount; i++){
+        edge *currentEdge = set->edgeArray[i];
+        int vertex1 = currentEdge-> v1;
+        int vertex2 = currentEdge-> v2;
+        
     }
-    return edges;
+}
+
+bool containsVertex(vertexSet *set, vertex v){
+    for(int j = 0; j < vertices->vertexCount; j++){
+        if(vertexArray[j] == vertex){
+            return 1;
+        }
+    }
+    return 0;
 }
 
 
-edge parseEdge(char *argument)
+edgeSet* parseAllEdges(int argc, char** argv)
+{
+    edgeSet *set = malloc(sizeof(edgeSet)); // TODO check if i can maybe remove malloc?
+    edge *edges = set->edgeArray;
+
+    int j = 0;
+    for (size_t i = 1; i < argc; i++, j++)
+    {
+        int err = parseEdge(argv[i], &edges[j]);
+        if(err < 0){
+            edgeParsingError();
+        }
+        printEdge(edges[j]);
+    }
+    return set;
+}
+
+
+int parseEdge(char *argument, edge *e)
 {
     // the format of the argument must be: two integers separated by a dash. ints are allowed to have a sign
     int n1;
@@ -59,10 +86,11 @@ edge parseEdge(char *argument)
     {
         vertex v1 = {n1};
         vertex v2 = {n2};
-        edge e = {v1, v2};
-        return e;
+        edge parsed = {v1, v2};
+        *e = parsed;
+        return 0;
     }
-    edgeParsingError();
+    return -1;
 }
 
 edgeSet selectOnlyValidEdges(edgeSet *edges){

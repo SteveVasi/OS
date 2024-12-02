@@ -31,6 +31,11 @@ typedef struct edge_set_t {
     int edgeCount;
 } edgeSet;
 
+typedef struct vertex_set_t {
+    vertex vertexArray[MAX_VERTICES];
+    int vertexCount;
+} vertexSet;
+
 typedef struct colored_vertex_set_t {
     coloredVertex coloredVertexArray[MAX_VERTICES];
     int coloredVertexCount;
@@ -39,7 +44,6 @@ typedef struct colored_vertex_set_t {
 typedef struct graph_t {
     edgeSet edgeSet;
     coloredVertexSet coloredVertexSet;
-    coloredVertex vertexArray[MAX_VERTICES];
     int vertexCount;
     /*
         The formula to determine the number of edges e in a complete graph is given by e = n * ( n − 1 )/ 2 
@@ -54,5 +58,7 @@ typedef struct graph_t {
 
 void printEdge(edge e);
 void printEdgeSet(edgeSet *es);
+void insertEdgeIntoGraph(edge *e, graph *g);
+void insertEdgeSetIntoGraph(edge *e, graph *g);
 
 #endif
