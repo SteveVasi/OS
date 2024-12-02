@@ -1,13 +1,15 @@
 #ifndef EDGE_H
 #define EDGE_H
 
+#define bool int
+
 #define MAX_EDGES (8)
 #define BUFFER_SIZE (10)
 #define MAX_VERTICES (MAX_EDGES * 2)
 
 // TYPE DEFS
 
-#define vertex unsigned int
+#define vertex int
 
 typedef enum {
     RED,
@@ -43,8 +45,9 @@ typedef struct colored_vertex_set_t {
 
 typedef struct graph_t {
     edgeSet edgeSet;
-    coloredVertexSet coloredVertexSet;
-    int vertexCount;
+    // ideally vertexSet should be implemented as a hash map for better performance
+    // but this exercise is already long enough
+    vertexSet vertexSet; 
     /*
         The formula to determine the number of edges e in a complete graph is given by e = n * ( n − 1 )/ 2 
         where e is the number of edges and n is the number of vertices
@@ -53,12 +56,15 @@ typedef struct graph_t {
         thus the maximum number of vertices given the edges is:
         v_max = floor(1/2*(1+sqrt(1+8e)))
     */
-
 } graph;
 
 void printEdge(edge e);
 void printEdgeSet(edgeSet *es);
 void insertEdgeIntoGraph(edge *e, graph *g);
 void insertEdgeSetIntoGraph(edge *e, graph *g);
+void getVerticesFromEdges(edgeSet *set, vertexSet *vertices);
+void constructGraph(edgeSet *set, graph *g);
+bool containsVertex(vertexSet *set, vertex v);
+void addVertexToSet(vertexSet *set, vertex v);
 
 #endif

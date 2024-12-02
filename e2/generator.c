@@ -11,7 +11,9 @@
 void usage(void);
 int parseEdge(char *argument, edge *e);
 void edgeParsingError(void);
-edgeSet* parseAllEdges(int edgeCount, char** argv);
+void parseAllEdges(int argc, char** argv, edgeSet *set);
+static COLOR randomColor(void);
+void colorRandomly(vertexSet *vs, coloredVertexSet *c);
 
 int main(int argc, char **argv)
 {
@@ -24,44 +26,35 @@ int main(int argc, char **argv)
     // it writes the edge sets to the circular buffer one at a time.
     // therefore a set of edges is a single element of the circular buffer
 
-    edgeSet *edges = parseAllEdges(argc, argv);
-
-
+    edgeSet *edges;
     graph *g;
+
+    parseAllEdges(argc, argv, edges);
     constructGraph(edges, g);
 
 
     free(edges);
 }
 
-void constructGraph(edgeSet *set, graph *g){
-    g->edgeSet = set;
-}
-
-void getVertexSet(edgeSet *set, vertexSet *vertices){
-    // ideally you would use a hash map for this to have a better time complexity but we dont care about that here
-    memset(vertices->vertexArray, -1, MAX_VERTICES);
-    for(int i = 0; i < set->edgeCount; i++){
-        edge *currentEdge = set->edgeArray[i];
-        int vertex1 = currentEdge-> v1;
-        int vertex2 = currentEdge-> v2;
-        
-    }
-}
-
-bool containsVertex(vertexSet *set, vertex v){
-    for(int j = 0; j < vertices->vertexCount; j++){
-        if(vertexArray[j] == vertex){
-            return 1;
-        }
-    }
-    return 0;
-}
-
-
-edgeSet* parseAllEdges(int argc, char** argv)
+coloredVertexSet generateValid3Coloring(graph *g)
 {
-    edgeSet *set = malloc(sizeof(edgeSet)); // TODO check if i can maybe remove malloc?
+    // monte carlo algorithm
+    coloredVertexSet coloredSet;
+    colorRandomly(&(g->vertexSet), &coloredSet);
+
+    return coloredSet;
+}
+
+void colorRandomly(vertexSet *vs, coloredVertexSet *c) 
+{
+    for(int i = 0; i < vs -> vertexCount; i++){
+        coloredVertex cv = {vs->vertexArray[i], randomColor()};
+        c->coloredVertexArray[i] = cv;
+    }
+}
+
+void parseAllEdges(int argc, char** argv, edgeSet *set)
+{
     edge *edges = set->edgeArray;
 
     int j = 0;
@@ -73,7 +66,6 @@ edgeSet* parseAllEdges(int argc, char** argv)
         }
         printEdge(edges[j]);
     }
-    return set;
 }
 
 
@@ -93,7 +85,8 @@ int parseEdge(char *argument, edge *e)
     return -1;
 }
 
-edgeSet selectOnlyValidEdges(edgeSet *edges){
+edgeSet selectOnlyValidEdges(edgeSet *edges)
+{
     /*
     edgeSet valids = malloc(sizeof(*edgeSet));
     int counter = 0;
@@ -108,16 +101,15 @@ edgeSet selectOnlyValidEdges(edgeSet *edges){
     return s;
 }
 
-static void colorGraph(graph graph){
-    // todo
-}
 
-static bool areValid(edge *edge){
+static bool areValid(edge *edge)
+{
     // todo
     return 1;
 }
 
-static COLOR randomColor(void){
+static COLOR randomColor(void)
+{
     int randy = rand();
     switch (randy % 3)
     {
@@ -137,7 +129,8 @@ static COLOR randomColor(void){
     }
 }
 
-void edgeParsingError(void){
+void edgeParsingError(void)
+{
     perror("Edge parsing error");
     usage();
     exit(EXIT_FAILURE);

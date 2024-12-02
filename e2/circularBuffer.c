@@ -1,6 +1,8 @@
 #include "circularBuffer.h"
+#include <stdio.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <semaphore.h>
@@ -11,7 +13,6 @@ int openSharedMemory()
     if (shm_fd == -1)
     {
         perror("Failed to create shared memory");
-        _exit(EXIT_FAILURE);
     }
     return shm_fd;
 }
@@ -44,24 +45,25 @@ circularBuffer* memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *
     return sharedBuffer;
 }
 
-void checkForSemError(circularBuffer *circularBuffer)
+int checkForSemError(circularBuffer *circularBuffer)
 {
     if (circularBuffer->freeSpace == SEM_FAILED ||
         circularBuffer->usedSpace == SEM_FAILED ||
         circularBuffer->writeMutex == SEM_FAILED)
     {
-        exitOnSemError();
+        return -1;
     }
+    return 0;
 }
 
-void initSharedBuffer(circularBuffer *circularBuffer)
+int initSharedBuffer(circularBuffer *circularBuffer)
 {
     circularBuffer->writeIndex = 0;
     circularBuffer->readIndex = 0;
     circularBuffer->freeSpace = sem_open(SEM_FREE_SPACE, O_CREAT, 777, BUFFER_SIZE);
     circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, O_CREAT, 777, 0);
     circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, O_CREAT, 777, 1);
-    checkForSemError(circularBuffer);
+    return checkForSemError(circularBuffer);
 }
 
 edgeSet readFromBuffer(circularBuffer *circularBuffer)
@@ -103,10 +105,3 @@ void cleanUpSemaphores(circularBuffer *circularBuffer)
     sem_unlink(SEM_WRITE_MUTEX);
     // TODO error handling for munmap, sem_close  and sem_unlink
 }
-
-void exitOnSemError(void)
-{
-    perror("An error with a semaphore has occurred. Exiting program now");
-    _exit(EXIT_FAILURE);
-}
-

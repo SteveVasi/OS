@@ -28,8 +28,8 @@ circularBuffer* memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *
 int openSharedMemory();
 int truncateSharedMemory(int sharedMemoryFileDescriptor);
 void exitOnSemError(void);
-void checkForSemError(circularBuffer *circularBuffer);
-void initSharedBuffer(circularBuffer *circularBuffer);
+int checkForSemError(circularBuffer *circularBuffer);
+int initSharedBuffer(circularBuffer *circularBuffer);
 void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer);
 edgeSet readFromBuffer(circularBuffer *circularBuffer);
 
