@@ -45,6 +45,27 @@ coloredVertexSet generateValid3Coloring(graph *g)
     return coloredSet;
 }
 
+selectInvalidEdges(coloredVertexSet *set) 
+{
+
+}
+
+edgeSet selectOnlyValidEdges(edgeSet *edges)
+{
+    /*
+    edgeSet valids = malloc(sizeof(*edgeSet));
+    int counter = 0;
+    for(int i = 0; i < edgeSet->edgeCount; i++){
+        if(areValid(edgeSet->edgeArray[i])){
+            valids[counter] = edgeSet->edgeArray[i];
+            counter++;
+        }
+    }*/
+    // TODO dont forget to free valid;
+    edgeSet s;
+    return s;
+}
+
 void colorRandomly(vertexSet *vs, coloredVertexSet *c) 
 {
     for(int i = 0; i < vs -> vertexCount; i++){
@@ -85,21 +106,7 @@ int parseEdge(char *argument, edge *e)
     return -1;
 }
 
-edgeSet selectOnlyValidEdges(edgeSet *edges)
-{
-    /*
-    edgeSet valids = malloc(sizeof(*edgeSet));
-    int counter = 0;
-    for(int i = 0; i < edgeSet->edgeCount; i++){
-        if(areValid(edgeSet->edgeArray[i])){
-            valids[counter] = edgeSet->edgeArray[i];
-            counter++;
-        }
-    }*/
-    // TODO dont forget to free valid;
-    edgeSet s;
-    return s;
-}
+
 
 
 static bool areValid(edge *edge)
