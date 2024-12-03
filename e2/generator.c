@@ -38,7 +38,7 @@ coloredVertexSet generateValid3Coloring(graph *g)
     // monte carlo algorithm
     coloredVertexSet *coloredSet = NULL;
     initColoredVertexSet(coloredSet);
-    colorRandomly(&(g->vertexSet), &coloredSet);
+    colorRandomly(&(g->vertexSet), coloredSet);
 
     return coloredSet;
 }
@@ -87,10 +87,13 @@ errorCode parseAllEdges(int argc, char** argv, graph *g)
     {
         int err = parseEdge(argv[i], &edges[j]);
         if(err < 0){
+            freeGraph(g);
             edgeParsingError();
+            return -1;
         }
         printEdge(edges[j]);
     }
+    return 0;
 }
 
 
