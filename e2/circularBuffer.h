@@ -10,6 +10,8 @@
 #define SEM_USED_SPACE "/semusedspace"
 #define SEM_WRITE_MUTEX "/semwritemutex"
 
+#define BUFFER_SIZE 10
+
 
 /*
     only (n-1) elements can be stored at a given time

@@ -2,10 +2,7 @@
 #define EDGE_H
 
 #define bool int
-
-#define MAX_EDGES (8)
-#define BUFFER_SIZE (10)
-#define MAX_VERTICES (MAX_EDGES * 2)
+#define errorCode int
 
 // TYPE DEFS
 
@@ -29,18 +26,21 @@ typedef struct colored_vertex_t {
 } coloredVertex;
 
 typedef struct edge_set_t {
-    edge edgeArray[MAX_EDGES];
-    int edgeCount;
+    edge *array;
+    int max;
+    int size;
 } edgeSet;
 
 typedef struct vertex_set_t {
-    vertex vertexArray[MAX_VERTICES];
-    int vertexCount;
+    vertex *array;
+    int max;
+    int size;
 } vertexSet;
 
 typedef struct colored_vertex_set_t {
-    coloredVertex coloredVertexArray[MAX_VERTICES];
-    int coloredVertexCount;
+    coloredVertex *array;
+    int max;
+    int size;
 } coloredVertexSet;
 
 typedef struct graph_t {
@@ -60,10 +60,18 @@ typedef struct graph_t {
 
 void printEdge(edge e);
 void printEdgeSet(edgeSet *es);
-void insertEdgeIntoGraph(edge *e, graph *g);
-void insertEdgeSetIntoGraph(edge *e, graph *g);
-void getVerticesFromEdges(edgeSet *set, vertexSet *vertices);
+errorCode initEdgeSet(edgeSet *es, int maximum);
+errorCode initVertexSet(vertexSet *vs, int maximum);
+errorCode initColoredVertexSet(coloredVertexSet *vs, int maximum);
+errorCode initGraph(graph *g, int maxEdges, int maxVertices);
+void freeEdgeSet(edgeSet *es);
+void freeVertexSet(vertexSet *vs);
+void freeColoredVertexSet(coloredVertexSet *vs);
+void freeGraph(graph *g) ;
+
 void constructGraph(edgeSet *set, graph *g);
+
+void getVerticesFromEdges(edgeSet *set, vertexSet *vertices);
 bool containsVertex(vertexSet *set, vertex v);
 void addVertexToSet(vertexSet *set, vertex v);
 
