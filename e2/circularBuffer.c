@@ -29,7 +29,7 @@ int truncateSharedMemory(int sharedMemoryFileDescriptor)
     return EXIT_SUCCESS;
 }
 
-circularBuffer* memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *cb)
+errorCode memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *cb)
 {
     circularBuffer *sharedBuffer = mmap(NULL,
                                           sizeof(*cb),
@@ -40,9 +40,10 @@ circularBuffer* memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *
     if (sharedBuffer == MAP_FAILED)
     {
         perror("Memory mapping failed");
-        return MAP_FAILED;
+        return -1;
     }
-    return sharedBuffer;
+    cb = sharedBuffer;
+    return 0;
 }
 
 int checkForSemError(circularBuffer *circularBuffer)
@@ -56,13 +57,23 @@ int checkForSemError(circularBuffer *circularBuffer)
     return 0;
 }
 
-int initSharedBuffer(circularBuffer *circularBuffer)
+int initSharedBufferServer(circularBuffer *circularBuffer)
 {
     circularBuffer->writeIndex = 0;
     circularBuffer->readIndex = 0;
     circularBuffer->freeSpace = sem_open(SEM_FREE_SPACE, O_CREAT, 777, BUFFER_SIZE);
     circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, O_CREAT, 777, 0);
     circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, O_CREAT, 777, 1);
+    return checkForSemError(circularBuffer);
+}
+
+int initSharedBufferClient(circularBuffer *circularBuffer)
+{
+    circularBuffer->writeIndex = 0;
+    circularBuffer->readIndex = 0;
+    circularBuffer->freeSpace = sem_open(SEM_FREE_SPACE, BUFFER_SIZE);
+    circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, 0);
+    circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, 1);
     return checkForSemError(circularBuffer);
 }
 

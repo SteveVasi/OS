@@ -26,12 +26,13 @@ typedef struct circular_buffer_t
     sem_t *writeMutex;
 } circularBuffer;
 
-circularBuffer* memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
+errorCode memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
 int openSharedMemory();
 int truncateSharedMemory(int sharedMemoryFileDescriptor);
 void exitOnSemError(void);
 int checkForSemError(circularBuffer *circularBuffer);
-int initSharedBuffer(circularBuffer *circularBuffer);
+int initSharedBufferServer(circularBuffer *circularBuffer);
+int initSharedBufferClient(circularBuffer *circularBuffer);
 void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer);
 edgeSet readFromBuffer(circularBuffer *circularBuffer);
 

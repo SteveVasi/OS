@@ -14,6 +14,9 @@ void edgeParsingError(void);
 errorCode parseAllEdges(int argc, char** argv, graph *g);
 static COLOR randomColor(void);
 void colorRandomly(vertexSet *vs, coloredVertexSet *c);
+errorCode selectInvalidEdges(coloredVertexSet *coloring, graph *g, edgeSet *invalids);
+bool isValid(edge e, coloredVertexSet *cvs) ;
+errorCode findColorOfVertex(vertex v, coloredVertexSet *set, COLOR *col);
 
 int main(int argc, char **argv)
 {
@@ -28,11 +31,18 @@ int main(int argc, char **argv)
 
     graph *g = NULL;
     coloredVertexSet *coloring = NULL; 
-    coloredVertexSet *invalids = NULL;
+    edgeSet *invalids = NULL;
 
     parseAllEdges(argc, argv, g);
     initColoredVertexSet(coloring, g->vertexSet.max);
-    initColoredVertexSet(invalids, g->vertexSet.max);
+    initEdgeSet(invalids, g->edgeSet.max);
+
+    int sharedMemoryFileDescriptor = openSharedMemory();
+    circularBuffer *sharedBuffer = NULL;
+    initSharedBufferClient(sharedBuffer);
+    if(memoryMapBuffer(sharedMemoryFileDescriptor, sharedBuffer)){
+        // GOTO somewhere in clean up
+    }
 
     // algorithm in loop
     colorRandomly(&(g->vertexSet), coloring);
@@ -42,7 +52,7 @@ int main(int argc, char **argv)
 
     // clean up
     freeColoredVertexSet(coloring);
-    freeColoredVertexSet(invalids);
+    freeEdgeSet(invalids);
     freeGraph(g);
 }
 
@@ -53,19 +63,34 @@ errorCode selectInvalidEdges(coloredVertexSet *coloring, graph *g, edgeSet *inva
         if(isValid(current, coloring)){
             continue;
         }
-        return addEdgeToSet(current, invalids);
+        if(addEdgeToSet(current, invalids)){
+            return -1;
+        }
     }
+    return 0;
 }
 
-COLOR findColorOfVertex(vertex v, coloredVertexSet *set) {
+bool isValid(edge e, coloredVertexSet *cvs) 
+{
+    COLOR c1;
+    COLOR c2; 
+    findColorOfVertex(e.v1, cvs, &c1);
+    findColorOfVertex(e.v2, cvs, &c2);
+    return c1 != c2;
+}
+
+
+errorCode findColorOfVertex(vertex v, coloredVertexSet *set, COLOR *col) {
     coloredVertex current;
     for(int i = 0; i < set -> size; i++){
         current = set -> array[i];
         if(current.v == v) {
-            return current.color;
+            *col = current.color;
+            return 0;
         }
     }
     perror("Couldnt find color of vertex. This should not happen");
+    return -1;
 }
 
 

@@ -78,8 +78,11 @@ int main(int argc, char **argv)
     
     int sharedMemoryFileDescriptor = openSharedMemory();
     truncateSharedMemory(sharedMemoryFileDescriptor);
-    circularBuffer *sharedBuffer;
-    sharedBuffer = memoryMapBuffer(sharedMemoryFileDescriptor, sharedBuffer); // error handling check / check return value for MAP_FAILED
+    circularBuffer *sharedBuffer = NULL;
+    initSharedBufferServer(sharedBuffer);
+    if(memoryMapBuffer(sharedMemoryFileDescriptor, sharedBuffer)){
+        //GOTO somewhere in clean up
+    } // error handling check / check return value for MAP_FAILED
 
     sleep(delay);
     volatile unsigned int solutions_count = 0;
@@ -96,6 +99,9 @@ int main(int argc, char **argv)
     clean_up_shared_memory_fd:
         close(sharedMemoryFileDescriptor); // TODO error handling
     */
+
+    printf("The best solution is:");
+    printEdgeSet(&bestSolution);
 
     return return_value;
 }
