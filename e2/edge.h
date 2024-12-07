@@ -45,9 +45,14 @@ typedef struct colored_vertex_set_t {
 
 typedef struct graph_t {
     edgeSet edgeSet;
-    // ideally vertexSet should be implemented as a hash map for better performance
+    // ideally vertexSet should be implemented as a map for better performance
     // but this exercise is already long enough
-    vertexSet vertexSet; 
+    
+    
+    vertexSet vertexSet; // TODO MAKE THIS COLORED!
+    
+    
+    
     /*
         The formula to determine the number of edges e in a complete graph is given by e = n * ( n − 1 )/ 2 
         where e is the number of edges and n is the number of vertices
@@ -73,6 +78,7 @@ void constructGraph(edgeSet *set, graph *g);
 
 void getVerticesFromEdges(edgeSet *set, vertexSet *vertices);
 bool containsVertex(vertexSet *set, vertex v);
-void addVertexToSet(vertexSet *set, vertex v);
+errorCode addVertexToSet(vertexSet *set, vertex v);
+errorCode addEdgeToSet(edge e, edgeSet *set);
 
 #endif

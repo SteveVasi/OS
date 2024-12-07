@@ -27,51 +27,53 @@ int main(int argc, char **argv)
     // therefore a set of edges is a single element of the circular buffer
 
     graph *g = NULL;
+    coloredVertexSet *coloring = NULL; 
+    coloredVertexSet *invalids = NULL;
 
     parseAllEdges(argc, argv, g);
+    initColoredVertexSet(coloring, g->vertexSet.max);
+    initColoredVertexSet(invalids, g->vertexSet.max);
 
+    // algorithm in loop
+    colorRandomly(&(g->vertexSet), coloring);
+    selectInvalidEdges(coloring, g, invalids);
+    // write to buffer
+
+
+    // clean up
+    freeColoredVertexSet(coloring);
+    freeColoredVertexSet(invalids);
     freeGraph(g);
 }
 
-coloredVertexSet generateValid3Coloring(graph *g)
-{
-    // monte carlo algorithm
-    coloredVertexSet *coloredSet = NULL;
-    initColoredVertexSet(coloredSet);
-    colorRandomly(&(g->vertexSet), coloredSet);
-
-    return coloredSet;
+errorCode selectInvalidEdges(coloredVertexSet *coloring, graph *g, edgeSet *invalids) 
+{ 
+    for(int i = 0; i < g -> edgeSet.size; i++) {
+        edge current = g -> edgeSet.array[i];
+        if(isValid(current, coloring)){
+            continue;
+        }
+        return addEdgeToSet(current, invalids);
+    }
 }
 
-selectInvalidEdges(coloredVertexSet *set) 
-{
-
+COLOR findColorOfVertex(vertex v, coloredVertexSet *set) {
+    coloredVertex current;
+    for(int i = 0; i < set -> size; i++){
+        current = set -> array[i];
+        if(current.v == v) {
+            return current.color;
+        }
+    }
+    perror("Couldnt find color of vertex. This should not happen");
 }
 
-/*
-edgeSet selectOnlyValidEdges(edgeSet *edges)
-{
-    
-    // edgeSet valids = malloc(sizeof(*edgeSet));
-    // int counter = 0;
-    // for(int i = 0; i < edgeSet->edgeCount; i++){
-    //     if(areValid(edgeSet->edgeArray[i])){
-    //         valids[counter] = edgeSet->edgeArray[i];
-    //         counter++;
-    //     }
-    // }
-    // TODO dont forget to free valid;
-    edgeSet s;
-    return s;
-}
 
-*/
-
-void colorRandomly(vertexSet *vs, coloredVertexSet *c) 
+void colorRandomly(vertexSet *vs, coloredVertexSet *cvs) 
 {
     for(int i = 0; i < vs -> size; i++){
         coloredVertex cv = {vs->array[i], randomColor()};
-        c->array[i] = cv;
+        cvs->array[i] = cv;
     }
 }
 
@@ -113,14 +115,6 @@ int parseEdge(char *argument, edge *e)
     return -1;
 }
 
-
-
-
-static bool areValid(edge *edge)
-{
-    // todo
-    return 1;
-}
 
 static COLOR randomColor(void)
 {

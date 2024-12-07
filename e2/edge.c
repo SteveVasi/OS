@@ -36,11 +36,26 @@ void getVerticesFromEdges(edgeSet *eSet, vertexSet *vSet)
  
 }
 
-void addVertexToSet(vertexSet *set, vertex v)
+errorCode addVertexToSet(vertexSet *set, vertex v) // TODO CHANGE PARAMETER ORDER AND ALSO RETURN VALUE TO ERRORCODE/CHECK FOR MAX
 {
-    set->array[set->size - 1] = v;
-    set->size++;
+    if(set -> size == set -> max) {
+        return -1;
+    }
+    set -> array[set -> size] = v;
+    set -> size++;
+    return 0;
 }
+
+errorCode addEdgeToSet(edge e, edgeSet *set)
+{
+    if(set -> size == set -> max) {
+        return -1;
+    }
+    set -> array[set -> size] = e;
+    set -> size++;
+    return 0;
+}
+
 
 bool containsVertex(vertexSet *set, vertex v)
 {
@@ -121,6 +136,9 @@ errorCode initGraph(graph *g, int maxEdges, int maxVertices)
 
 void freeGraph(graph *g) 
 {
+    free(g);
+    /* TODO i think the commented code is incorrect bc es and vs are not pointers? not sure 
     freeEdgeSet(&(g->edgeSet));
     freeVertexSet(&(g->vertexSet));
+    */
 }
