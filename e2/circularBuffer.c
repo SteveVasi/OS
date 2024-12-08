@@ -17,16 +17,16 @@ int openSharedMemory()
     return shm_fd;
 }
 
-int truncateSharedMemory(int sharedMemoryFileDescriptor)
+errorCode truncateSharedMemory(int sharedMemoryFileDescriptor)
 {
-    int truncation = ftruncate(sharedMemoryFileDescriptor, sizeof(circularBuffer));
+    errorCode truncation = ftruncate(sharedMemoryFileDescriptor, sizeof(circularBuffer));
     if (truncation < 0)
     {
         perror("Failed to truncate shared memory");
         // return -1 and then caller has to check return value 
         return truncation;
     }
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 errorCode memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *cb)
@@ -77,6 +77,7 @@ int initSharedBufferClient(circularBuffer *circularBuffer)
     return checkForSemError(circularBuffer);
 }
 
+// TODO make this return errorCode and add parameter for return value
 edgeSet readFromBuffer(circularBuffer *circularBuffer)
 {
     edgeSet result;
@@ -91,6 +92,7 @@ edgeSet readFromBuffer(circularBuffer *circularBuffer)
     return result;
 }
 
+// TODO make this return errorCode and add parameter for return value
 void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer)
 {
     sem_wait(circularBuffer->freeSpace);
@@ -104,7 +106,7 @@ void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer)
     // TODO error handling
 }
 
-
+// TODO make this return errorCode
 void cleanUpSemaphores(circularBuffer *circularBuffer)
 {
     munmap(circularBuffer, sizeof(*circularBuffer));

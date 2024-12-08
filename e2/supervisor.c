@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     volatile unsigned int solutions_count = 0;
 
     edgeSet bestSolution;
-    while (shouldRun(solutions_count, limit))
+    while (shouldRun(solutions_count, limit, bestSolution.size))
     {
         edgeSet newValue = readFromBuffer(sharedBuffer);
     }
