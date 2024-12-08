@@ -75,8 +75,6 @@ int main(int argc, char **argv)
 
     // supervisor sets up shared memory, semaphores and circular buffer
 
-    
-    
     int sharedMemoryFileDescriptor = openSharedMemory();
     if(sharedMemoryFileDescriptor < 0){
         return_value = -1;
@@ -87,13 +85,15 @@ int main(int argc, char **argv)
         goto close_shared_memory;
     };
     circularBuffer *sharedBuffer = NULL;
-    if(initSharedBufferServer(sharedBuffer)){
-        return_value = -1;
+    if(memoryMapBuffer(sharedMemoryFileDescriptor, &sharedBuffer)){
+        perror("mmap err");
         goto close_shared_memory;
     }
-    if(memoryMapBuffer(sharedMemoryFileDescriptor, sharedBuffer)){
+    if(initSharedBufferServer(sharedBuffer)){
+        perror("initBufferServer err");
+        return_value = -1;
         goto unmap_shared_memory;
-    } // error handling check / check return value for MAP_FAILED
+    }
 
     sleep(delay);
     volatile unsigned int solutions_count = 0;
@@ -104,6 +104,8 @@ int main(int argc, char **argv)
 
     while (shouldRun(solutions_count, limit, bestSolution.size, &quitFlag))
     {
+        printf("In loop!");
+        fflush(stdout);
         edgeSet readSet;
         if(readFromBuffer(sharedBuffer, &readSet)){
             goto cleanUpAllResources;
@@ -112,27 +114,43 @@ int main(int argc, char **argv)
             bestSolution = readSet;
         }
     }
+    printf("Out of the loop!");
+    fflush(stdout);
 
     
     cleanUpAllResources:
     unmap_shared_memory:
-        unmapSharedMemory(sharedBuffer);
-    close_shared_memory:
-        close(sharedMemoryFileDescriptor); 
-    // unlink_shared_memory:
-        unlinkSharedMemory();
+        if(unmapSharedMemory(sharedBuffer)){
+            return_value = -1;
+        };
     // close_semaphores:
-        closeSemaphores(sharedBuffer);
+        if(closeSemaphores(sharedBuffer)){
+            return_value = -1;
+        };
     // unlink_semaphores:
-        unlinkSemaphores();
-    
+        if(unlinkSemaphores()){
+            return_value = -1;
+        }
+    close_shared_memory:
+        if(close(sharedMemoryFileDescriptor)){
+            return_value = -1;
+        }; 
+    // unlink_shared_memory:
+        if(unlinkSharedMemory()){
+            return_value = -1;
+        };
 
+    
+    
     if(bestSolution.size == 0){
         printf("The graph is 3-colorable");
     } else {
         printf("The best solution removes these edges:");
         printEdgeSet(&bestSolution);
     }
+    fflush(stdout);
+
+    freeEdgeSet(&bestSolution);
 
     return return_value;
 }
@@ -154,8 +172,9 @@ bool shouldRun(int solutions, int maxSolutions, int bestSolutionSize, volatile s
 
 void handleSignal(int signal)
 {
-    // goto cleanUpAllResources; doesnt work :(
     quitFlag = 1;
+    // TODO send signal to generators
+    return;
 }
 
 void usage(void)

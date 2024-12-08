@@ -9,10 +9,14 @@ void printEdge(edge e)
 
 void printEdgeSet(edgeSet *es)
 {
+    if(es->size == 0){
+        printf("Edge set is empty");
+    }
     for(int i = 0; i < es->size; i++){
         printEdge(es->array[i]);
     }
     printf("\n");
+    fflush(stdout);
 }
 
 void constructGraph(edgeSet *set, graph *g)

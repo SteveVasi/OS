@@ -17,6 +17,7 @@ void colorRandomly(vertexSet *vs, coloredVertexSet *c);
 errorCode selectInvalidEdges(coloredVertexSet *coloring, graph *g, edgeSet *invalids);
 bool isValid(edge e, coloredVertexSet *cvs) ;
 errorCode findColorOfVertex(vertex v, coloredVertexSet *set, COLOR *col);
+bool shouldRun(void);
 
 int main(int argc, char **argv)
 {
@@ -40,13 +41,16 @@ int main(int argc, char **argv)
     int sharedMemoryFileDescriptor = openSharedMemory();
     circularBuffer *sharedBuffer = NULL;
     initSharedBufferClient(sharedBuffer);
-    if(memoryMapBuffer(sharedMemoryFileDescriptor, sharedBuffer)){
+    if(memoryMapBuffer(sharedMemoryFileDescriptor, &sharedBuffer)){
         // GOTO somewhere in clean up
     }
 
     // algorithm in loop
-    colorRandomly(&(g->vertexSet), coloring);
-    selectInvalidEdges(coloring, g, invalids);
+    while(shouldRun()){
+        colorRandomly(&(g->vertexSet), coloring);
+        selectInvalidEdges(coloring, g, invalids);
+        writeToBuffer(invalids, sharedBuffer);
+    }
     // write to buffer
 
 
@@ -56,6 +60,11 @@ int main(int argc, char **argv)
     freeEdgeSet(invalids);
     freeColoredVertexSet(coloring);
     freeGraph(g);
+}
+
+bool shouldRun(void)
+{ // TODO impl
+    return 1; 
 }
 
 errorCode selectInvalidEdges(coloredVertexSet *coloring, graph *g, edgeSet *invalids) 

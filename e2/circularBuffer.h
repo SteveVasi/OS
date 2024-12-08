@@ -27,7 +27,7 @@ typedef struct circular_buffer_t
 } circularBuffer;
 
 
-errorCode memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
+errorCode memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer **cb);
 errorCode openSharedMemory();
 int truncateSharedMemory(int sharedMemoryFileDescriptor);
 
