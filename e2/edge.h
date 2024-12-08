@@ -3,10 +3,11 @@
 
 #define bool int
 #define errorCode int
+#define MAX_REMOVED_EDGES 8
 
 // TYPE DEFS
 
-#define vertex int
+typedef int vertex;
 
 typedef enum {
     RED,
@@ -31,6 +32,8 @@ typedef struct edge_set_t {
     int size;
 } edgeSet;
 
+typedef edgeSet removedEdgeSet;
+
 typedef struct vertex_set_t {
     vertex *array;
     int max;
@@ -48,11 +51,8 @@ typedef struct graph_t {
     // ideally vertexSet should be implemented as a map for better performance
     // but this exercise is already long enough
     
-    
-    vertexSet vertexSet; // TODO MAKE THIS COLORED!
-    
-    
-    
+    vertexSet vertexSet; 
+ 
     /*
         The formula to determine the number of edges e in a complete graph is given by e = n * ( n − 1 )/ 2 
         where e is the number of edges and n is the number of vertices

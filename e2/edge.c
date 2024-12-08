@@ -71,11 +71,23 @@ errorCode initEdgeSet(edgeSet *es, int maximum)
 {
     es->array = malloc(maximum * sizeof(edge));
     if(es->array == NULL) {
-        perror("Failed to allocate mempory for edge set");
+        perror("Failed to allocate memory for edge set");
         return -1;
     }
     es -> size = 0; 
     es -> max = maximum;
+    return 0;
+}
+
+errorCode initRemovedEdgeSet(edgeSet *es)
+{
+    es->array = malloc(MAX_REMOVED_EDGES * sizeof(edge));
+    if(es->array == NULL) {
+        perror("Failed to allocate memory for removed edge set");
+        return -1;
+    }
+    es -> size = 0; 
+    es -> max = MAX_REMOVED_EDGES;
     return 0;
 }
 

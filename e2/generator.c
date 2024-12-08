@@ -50,9 +50,11 @@ int main(int argc, char **argv)
     // write to buffer
 
 
-    // clean up
-    freeColoredVertexSet(coloring);
+    // clean up shm resources
+
+    // clean up generator resources
     freeEdgeSet(invalids);
+    freeColoredVertexSet(coloring);
     freeGraph(g);
 }
 

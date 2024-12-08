@@ -7,12 +7,12 @@
 #include <sys/types.h>
 #include <semaphore.h>
 
-int openSharedMemory()
+errorCode openSharedMemory()
 {
     int shm_fd = shm_open(CIRCULAR_ARRAY_BUFFER, O_RDWR | O_CREAT, 0600);
     if (shm_fd == -1)
     {
-        perror("Failed to create shared memory");
+        perror("Error opening shared memory file descriptor");
     }
     return shm_fd;
 }
@@ -46,7 +46,7 @@ errorCode memoryMapBuffer(int sharedMemoryFileDescriptor, circularBuffer *cb)
     return 0;
 }
 
-int checkForSemError(circularBuffer *circularBuffer)
+errorCode checkForSemError(circularBuffer *circularBuffer)
 {
     if (circularBuffer->freeSpace == SEM_FAILED ||
         circularBuffer->usedSpace == SEM_FAILED ||
@@ -57,7 +57,7 @@ int checkForSemError(circularBuffer *circularBuffer)
     return 0;
 }
 
-int initSharedBufferServer(circularBuffer *circularBuffer)
+errorCode initSharedBufferServer(circularBuffer *circularBuffer)
 {
     circularBuffer->writeIndex = 0;
     circularBuffer->readIndex = 0;
@@ -67,7 +67,7 @@ int initSharedBufferServer(circularBuffer *circularBuffer)
     return checkForSemError(circularBuffer);
 }
 
-int initSharedBufferClient(circularBuffer *circularBuffer)
+errorCode initSharedBufferClient(circularBuffer *circularBuffer)
 {
     circularBuffer->writeIndex = 0;
     circularBuffer->readIndex = 0;
@@ -77,44 +77,66 @@ int initSharedBufferClient(circularBuffer *circularBuffer)
     return checkForSemError(circularBuffer);
 }
 
-// TODO make this return errorCode and add parameter for return value
-edgeSet readFromBuffer(circularBuffer *circularBuffer)
+errorCode readFromBuffer(circularBuffer *circularBuffer, edgeSet *es)
 {
-    edgeSet result;
+    if(sem_wait(circularBuffer->usedSpace)){
+        return -1;
+    };
 
-    sem_wait(circularBuffer->usedSpace);  // TODO error handling
-
-    result = circularBuffer->buffer[circularBuffer->readIndex];
+    *es = circularBuffer->array[circularBuffer->readIndex];
     circularBuffer->readIndex = (circularBuffer->readIndex + 1) % BUFFER_SIZE;
 
-    sem_post(circularBuffer->freeSpace);  // TODO error handling
-    // TODO error handling
-    return result;
+    if(sem_post(circularBuffer->freeSpace)){
+        return -1;
+    };
+    
+    return 0;
 }
 
-// TODO make this return errorCode and add parameter for return value
-void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer)
+errorCode writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer)
 {
-    sem_wait(circularBuffer->freeSpace);
-    sem_wait(circularBuffer->writeMutex);
+    if(sem_wait(circularBuffer->freeSpace)){
+        return -1;
+    };
+    if(sem_wait(circularBuffer->writeMutex)){
+        return -1;
+    };
 
-    circularBuffer->buffer[circularBuffer->writeIndex] = *edgeSet;
+    circularBuffer->array[circularBuffer->writeIndex] = *edgeSet;
     (*circularBuffer).writeIndex = (circularBuffer->writeIndex + 1) % BUFFER_SIZE;
 
-    sem_post(circularBuffer->writeMutex);
-    sem_post(circularBuffer->usedSpace);
-    // TODO error handling
+    if(sem_post(circularBuffer->writeMutex)){
+        return -1;
+    };
+    if(sem_post(circularBuffer->usedSpace)){
+        return -1;
+    };
+    return 0;
 }
 
-// TODO make this return errorCode
-void cleanUpSemaphores(circularBuffer *circularBuffer)
+errorCode closeSemaphores(circularBuffer *circularBuffer)
 {
-    munmap(circularBuffer, sizeof(*circularBuffer));
-    sem_close(circularBuffer->freeSpace);
-    sem_close(circularBuffer->usedSpace);
-    sem_close(circularBuffer->writeMutex);
-    sem_unlink(SEM_FREE_SPACE);
-    sem_unlink(SEM_USED_SPACE);
-    sem_unlink(SEM_WRITE_MUTEX);
-    // TODO error handling for munmap, sem_close  and sem_unlink
+    int e1 = sem_close(circularBuffer->freeSpace);
+    int e2 = sem_close(circularBuffer->usedSpace);
+    int e3 = sem_close(circularBuffer->writeMutex);
+    return e1 || e2 || e3;
+}
+
+errorCode unlinkSemaphores()
+{
+    int e1 = sem_unlink(SEM_FREE_SPACE);
+    int e2 = sem_unlink(SEM_USED_SPACE);
+    int e3 = sem_unlink(SEM_WRITE_MUTEX);
+    return e1 || e2 || e3;
+}
+
+errorCode unmapSharedMemory(circularBuffer *b)
+{
+    munmap(b, sizeof(*b));
+
+}
+
+errorCode unlinkSharedMemory()
+{
+    shm_unlink(CIRCULAR_ARRAY_BUFFER); 
 }

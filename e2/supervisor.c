@@ -3,7 +3,6 @@
 #include <getopt.h>
 #include <signal.h>
 #include <unistd.h>
-#include <limits.h>
 #include "circularBuffer.h"
 
 
@@ -11,9 +10,10 @@
 
 void usage(void);
 void handleSignal(int signal);
-bool shouldRun(int solutions, int maxSolutions);
+bool shouldRun(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag);
+bool isBetterThan(edgeSet *removedEdges1, edgeSet *removedEdges2);
 
-volatile sig_atomic_t quit = 0;
+volatile sig_atomic_t quitFlag = 0; // TODO get rid of this
 
 int main(int argc, char **argv)
 {
@@ -21,10 +21,11 @@ int main(int argc, char **argv)
     // goto (further down but not up!)
     int return_value = 0;
 
+
     signal(SIGINT, handleSignal);
     signal(SIGTERM, handleSignal);
 
-    int limit = INT_MAX;
+    int limit = -1;
     unsigned int delay = 0;
     int opt;
     int allowedArgCount = 0;
@@ -77,49 +78,84 @@ int main(int argc, char **argv)
     
     
     int sharedMemoryFileDescriptor = openSharedMemory();
-    truncateSharedMemory(sharedMemoryFileDescriptor);
+    if(sharedMemoryFileDescriptor < 0){
+        return_value = -1;
+        return EXIT_FAILURE;
+    }
+    if(truncateSharedMemory(sharedMemoryFileDescriptor)){
+        return_value = -1;
+        goto close_shared_memory;
+    };
     circularBuffer *sharedBuffer = NULL;
-    initSharedBufferServer(sharedBuffer);
+    if(initSharedBufferServer(sharedBuffer)){
+        return_value = -1;
+        goto close_shared_memory;
+    }
     if(memoryMapBuffer(sharedMemoryFileDescriptor, sharedBuffer)){
-        //GOTO somewhere in clean up
+        goto unmap_shared_memory;
     } // error handling check / check return value for MAP_FAILED
 
     sleep(delay);
     volatile unsigned int solutions_count = 0;
 
-    edgeSet bestSolution;
-    while (shouldRun(solutions_count, limit, bestSolution.size))
+    removedEdgeSet bestSolution;
+    initRemovedEdgeSet(&bestSolution);
+    bestSolution.size = MAX_REMOVED_EDGES;
+
+    while (shouldRun(solutions_count, limit, bestSolution.size, &quitFlag))
     {
-        edgeSet newValue = readFromBuffer(sharedBuffer);
+        edgeSet readSet;
+        if(readFromBuffer(sharedBuffer, &readSet)){
+            goto cleanUpAllResources;
+        }
+        if(isBetterThan(&readSet, &bestSolution)){
+            bestSolution = readSet;
+        }
     }
 
-    /*
+    
     cleanUpAllResources:
-        shm_unlink(CIRCULAR_ARRAY_BUFFER); // TODO error handling
-    clean_up_shared_memory_fd:
-        close(sharedMemoryFileDescriptor); // TODO error handling
-    */
+    unmap_shared_memory:
+        unmapSharedMemory(sharedBuffer);
+    close_shared_memory:
+        close(sharedMemoryFileDescriptor); 
+    // unlink_shared_memory:
+        unlinkSharedMemory();
+    // close_semaphores:
+        closeSemaphores(sharedBuffer);
+    // unlink_semaphores:
+        unlinkSemaphores();
+    
 
-    printf("The best solution is:");
-    printEdgeSet(&bestSolution);
+    if(bestSolution.size == 0){
+        printf("The graph is 3-colorable");
+    } else {
+        printf("The best solution removes these edges:");
+        printEdgeSet(&bestSolution);
+    }
 
     return return_value;
 }
 
-bool isBetterThan(edgeSet *es1, edgeSet *es2){
-    return 0;
+bool isBetterThan(edgeSet *removedEdges1, edgeSet *removedEdges2)
+{
+    return removedEdges1->size < removedEdges2->size;
 }
 
 
-bool shouldRun(int solutions, int maxSolutions)
+bool shouldRun(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag)
 {
-    return (solutions <= maxSolutions) && (quit == 0);
+    if(maxSolutions < 0){
+        return (*quitFlag == 0) || bestSolutionSize != 0;
+    } else{
+        return ((solutions <= maxSolutions) && (*quitFlag == 0)) || bestSolutionSize != 0;
+    }
 }
 
 void handleSignal(int signal)
 {
     // goto cleanUpAllResources; doesnt work :(
-    quit = 1;
+    quitFlag = 1;
 }
 
 void usage(void)
