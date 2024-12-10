@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 
     removedEdgeSet bestSolution;
     initRemovedEdgeSet(&bestSolution);
-    bool hasBeenTouched = 0;
+    bool bestSolutionhasBeenTouched = 0;
 
     while (shouldRun(solutions_count, limit, bestSolution.size, &quitFlag))
     {
@@ -120,8 +120,8 @@ int main(int argc, char **argv)
 
         if(isBetterThan(&readSet, &bestSolution)){
             copyEdgeSet(&bestSolution, &readSet);
+            bestSolutionhasBeenTouched = 1;
         }
-        hasBeenTouched = 1;
     }
     printf("Out of the loop!\n");
     fflush(stdout);
