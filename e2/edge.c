@@ -1,6 +1,7 @@
 #include "edge.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void printEdge(edge e)
 {
@@ -90,7 +91,7 @@ errorCode initRemovedEdgeSet(edgeSet *es)
         perror("Failed to allocate memory for removed edge set");
         return -1;
     }
-    es -> size = 0; 
+    es -> size = MAX_REMOVED_EDGES; 
     es -> max = MAX_REMOVED_EDGES;
     return 0;
 }

@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 
     
     
-    if(bestSolution.size == 0){
+    if(bestSolution.size == 0 && hasBeenTouched){
         printf("The graph is 3-colorable");
     } else if(hasBeenTouched) {
         printf("The best solution removes these edges:");
