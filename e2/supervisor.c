@@ -102,6 +102,7 @@ int main(int argc, char **argv)
     removedEdgeSet bestSolution;
     initRemovedEdgeSet(&bestSolution);
     bestSolution.size = MAX_REMOVED_EDGES;
+    bool hasBeenTouched = 0;
 
     while (shouldRun(solutions_count, limit, bestSolution.size, &quitFlag))
     {
@@ -121,6 +122,7 @@ int main(int argc, char **argv)
         if(isBetterThan(&readSet, &bestSolution)){
             copyEdgeSet(&bestSolution, &readSet);
         }
+        hasBeenTouched = 1;
     }
     printf("Out of the loop!");
     fflush(stdout);
@@ -152,11 +154,14 @@ int main(int argc, char **argv)
     
     if(bestSolution.size == 0){
         printf("The graph is 3-colorable");
-    } else {
+    } else if(hasBeenTouched) {
         printf("The best solution removes these edges:");
         printEdgeSet(&bestSolution);
+    } else {
+        printf("Could not find any solution");
     }
     fflush(stdout);
+
 
     freeEdgeSet(&bestSolution);
 
