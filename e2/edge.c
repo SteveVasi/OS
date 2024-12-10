@@ -103,6 +103,13 @@ void freeEdgeSet(edgeSet *es)
     es -> max = 0;
 }
 
+void copyEdgeSet(edgeSet *destination, edgeSet *source){
+    memcpy(destination->array, source->array, source->size);
+    destination->size = source->size;
+    destination->max = source->max;
+}
+
+
 errorCode initVertexSet(vertexSet *vs, int maximum) 
 {
     vs->array = malloc(maximum * sizeof(vertex));
@@ -143,10 +150,25 @@ void freeColoredVertexSet(coloredVertexSet *vs)
     vs -> max = 0;
 }
 
-errorCode initGraph(graph *g, int maxEdges, int maxVertices)
+errorCode initGraph(graph **g, int maxEdges, int maxVertices)
 {
-    errorCode es = initEdgeSet(&(g->edgeSet), maxEdges);
-    errorCode vs = initVertexSet(&(g->vertexSet), maxVertices);
+    *g = malloc(sizeof(graph));
+    if(*g == NULL){
+        perror("Failed to allocate memory for graph");
+        return -1;
+    }
+    errorCode es = initEdgeSet(&((*g)->edgeSet), maxEdges);
+    if (es != 0) {
+        free(*g);
+        return es; // Return error from initEdgeSet
+    }
+
+    errorCode vs = initVertexSet(&((*g)->vertexSet), maxVertices);
+    if (vs != 0) {
+        freeEdgeSet(&((*g)->edgeSet)); // Cleanup previously initialized edgeSet
+        free(*g);
+        return vs; // Return error from initVertexSet
+    }
     return es + vs;
 }
 

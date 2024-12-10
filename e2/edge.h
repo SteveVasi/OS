@@ -68,7 +68,7 @@ void printEdgeSet(edgeSet *es);
 errorCode initEdgeSet(edgeSet *es, int maximum);
 errorCode initVertexSet(vertexSet *vs, int maximum);
 errorCode initColoredVertexSet(coloredVertexSet *vs, int maximum);
-errorCode initGraph(graph *g, int maxEdges, int maxVertices);
+errorCode initGraph(graph **g, int maxEdges, int maxVertices);
 void freeEdgeSet(edgeSet *es);
 void freeVertexSet(vertexSet *vs);
 void freeColoredVertexSet(coloredVertexSet *vs);
@@ -80,5 +80,5 @@ void getVerticesFromEdges(edgeSet *set, vertexSet *vertices);
 bool containsVertex(vertexSet *set, vertex v);
 errorCode addVertexToSet(vertexSet *set, vertex v);
 errorCode addEdgeToSet(edge e, edgeSet *set);
-
+void copyEdgeSet(edgeSet *destination, edgeSet *source);
 #endif

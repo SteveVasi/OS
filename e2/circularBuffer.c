@@ -90,17 +90,18 @@ errorCode initSharedBufferClient(circularBuffer *circularBuffer)
 {
     circularBuffer->writeIndex = 0;
     circularBuffer->readIndex = 0;
-    circularBuffer->freeSpace = sem_open(SEM_FREE_SPACE, BUFFER_SIZE);
+    
+    circularBuffer->freeSpace = sem_open(SEM_FREE_SPACE, O_CREAT);
     if (circularBuffer->freeSpace == SEM_FAILED) {
         perror("Failed to initialize freeSpace semaphore");
         return -1;
     }
-    circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, 0);
+    circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, O_CREAT);
     if (circularBuffer->usedSpace == SEM_FAILED) {
         perror("Failed to initialize usedSpace semaphore");
         return -1;
     }
-    circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, 1);
+    circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, O_CREAT);
     if (circularBuffer->writeMutex == SEM_FAILED) {
         perror("Failed to initialize writeMutex semaphore");
         return -1;
@@ -146,25 +147,26 @@ errorCode writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer)
     return 0;
 }
 
-errorCode closeSemaphores(circularBuffer *circularBuffer)
+errorCode closeSemaphores(circularBuffer *cb)
 {
-    if (circularBuffer == NULL) {
+    if (cb == NULL) {
         perror("Circular buffer is NULL");
         return -1;
     }
 
-    if (circularBuffer->freeSpace != NULL && circularBuffer->freeSpace != SEM_FAILED) {
-        if (sem_close(circularBuffer->freeSpace) != 0) {
+    if (cb->freeSpace != NULL 
+        && cb->freeSpace != SEM_FAILED) {
+        if (sem_close(cb->freeSpace) != 0) {
             perror("Error closing freeSpace semaphore");
         }
     }
-    if (circularBuffer->usedSpace != NULL && circularBuffer->usedSpace != SEM_FAILED) {
-        if (sem_close(circularBuffer->usedSpace) != 0) {
+    if (cb->usedSpace != NULL && cb->usedSpace != SEM_FAILED) {
+        if (sem_close(cb->usedSpace) != 0) {
             perror("Error closing usedSpace semaphore");
         }
     }
-    if (circularBuffer->writeMutex != NULL && circularBuffer->writeMutex != SEM_FAILED) {
-        if (sem_close(circularBuffer->writeMutex) != 0) {
+    if (cb->writeMutex != NULL && cb->writeMutex != SEM_FAILED) {
+        if (sem_close(cb->writeMutex) != 0) {
             perror("Error closing writeMutex semaphore");
         }
     }

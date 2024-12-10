@@ -11,7 +11,7 @@
 void usage(void);
 int parseEdge(char *argument, edge *e);
 void edgeParsingError(void);
-errorCode parseAllEdges(int argc, char** argv, graph *g);
+errorCode parseAllEdges(int argc, char** argv, graph **g);
 static COLOR randomColor(void);
 void colorRandomly(vertexSet *vs, coloredVertexSet *c);
 errorCode selectInvalidEdges(coloredVertexSet *coloring, graph *g, edgeSet *invalids);
@@ -21,7 +21,7 @@ bool shouldRun(void);
 
 int main(int argc, char **argv)
 {
-    
+    int return_value = 0;
 
     // each positional argument is one edge
     // at least one edge must be given
@@ -31,19 +31,37 @@ int main(int argc, char **argv)
     // therefore a set of edges is a single element of the circular buffer
 
     graph *g = NULL;
-    coloredVertexSet *coloring = NULL; 
-    edgeSet *invalids = NULL;
+    coloredVertexSet *coloring = malloc(sizeof(coloredVertexSet)); 
+    edgeSet *invalids = malloc(sizeof(edgeSet));
 
-    parseAllEdges(argc, argv, g);
-    initColoredVertexSet(coloring, g->vertexSet.max);
-    initEdgeSet(invalids, g->edgeSet.max);
+    if (parseAllEdges(argc, argv, &g) != 0) {
+        return_value = -1;
+        perror("Error parsing edges\n");
+        return EXIT_FAILURE;
+    }
+
+    if (initColoredVertexSet(coloring, g->vertexSet.max) != 0) {
+        return_value = -1;
+        freeGraph(g);
+        perror("Failed to initialize colored vertex set\n");
+        return EXIT_FAILURE;
+    }
+
+    if (initEdgeSet(invalids, g->edgeSet.max) != 0) {
+        return_value = -1;
+        freeColoredVertexSet(coloring);
+        freeGraph(g);
+        perror("Failed to initialize edge set\n");
+        return EXIT_FAILURE;
+    }
+
 
     int sharedMemoryFileDescriptor = openSharedMemory();
     circularBuffer *sharedBuffer = NULL;
-    initSharedBufferClient(sharedBuffer);
     if(memoryMapBuffer(sharedMemoryFileDescriptor, &sharedBuffer)){
         // GOTO somewhere in clean up
     }
+    initSharedBufferClient(sharedBuffer);
 
     // algorithm in loop
     while(shouldRun()){
@@ -60,6 +78,8 @@ int main(int argc, char **argv)
     freeEdgeSet(invalids);
     freeColoredVertexSet(coloring);
     freeGraph(g);
+
+    return return_value;
 }
 
 bool shouldRun(void)
@@ -113,19 +133,19 @@ void colorRandomly(vertexSet *vs, coloredVertexSet *cvs)
     }
 }
 
-errorCode parseAllEdges(int argc, char** argv, graph *g)
+errorCode parseAllEdges(int argc, char** argv, graph **g)
 {
     int edgeCount = argc - 1;
     initGraph(g, edgeCount, edgeCount * 2);
 
-    edge *edges = (g -> edgeSet.array);
+    edge *edges = ((*g) -> edgeSet.array);
 
     int j = 0;
     for (size_t i = 1; i < argc; i++, j++)
     {
         int err = parseEdge(argv[i], &edges[j]);
         if(err < 0){
-            freeGraph(g);
+            freeGraph(*g);
             edgeParsingError();
             return -1;
         }

@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <signal.h>
 #include <unistd.h>
+#include <string.h>
 #include "circularBuffer.h"
 
 
@@ -13,7 +14,7 @@ void handleSignal(int signal);
 bool shouldRun(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag);
 bool isBetterThan(edgeSet *removedEdges1, edgeSet *removedEdges2);
 
-volatile sig_atomic_t quitFlag = 0; // TODO get rid of this
+volatile sig_atomic_t quitFlag = 0;
 
 int main(int argc, char **argv)
 {
@@ -106,12 +107,19 @@ int main(int argc, char **argv)
     {
         printf("In loop!");
         fflush(stdout);
+
+        if(quitFlag) {
+            break;
+        }
+
         edgeSet readSet;
+        
         if(readFromBuffer(sharedBuffer, &readSet)){
             goto cleanUpAllResources;
         }
+
         if(isBetterThan(&readSet, &bestSolution)){
-            bestSolution = readSet;
+            copyEdgeSet(&bestSolution, &readSet);
         }
     }
     printf("Out of the loop!");
@@ -119,10 +127,6 @@ int main(int argc, char **argv)
 
     
     cleanUpAllResources:
-    unmap_shared_memory:
-        if(unmapSharedMemory(sharedBuffer)){
-            return_value = -1;
-        };
     // close_semaphores:
         if(closeSemaphores(sharedBuffer)){
             return_value = -1;
@@ -131,6 +135,10 @@ int main(int argc, char **argv)
         if(unlinkSemaphores()){
             return_value = -1;
         }
+    unmap_shared_memory:
+        if(unmapSharedMemory(sharedBuffer)){
+            return_value = -1;
+        };
     close_shared_memory:
         if(close(sharedMemoryFileDescriptor)){
             return_value = -1;
@@ -163,16 +171,21 @@ bool isBetterThan(edgeSet *removedEdges1, edgeSet *removedEdges2)
 
 bool shouldRun(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag)
 {
-    if(maxSolutions < 0){
-        return (*quitFlag == 0) || bestSolutionSize != 0;
-    } else{
-        return ((solutions <= maxSolutions) && (*quitFlag == 0)) || bestSolutionSize != 0;
+    if (*quitFlag) {
+        return 0;
+    }
+    if (maxSolutions < 0) {
+        return bestSolutionSize != 0;
+    } else {
+        return (solutions <= maxSolutions) || bestSolutionSize != 0;
     }
 }
 
 void handleSignal(int signal)
 {
     quitFlag = 1;
+    char* msg = "Received signal";
+    write(STDOUT_FILENO, msg, strlen(msg));
     // TODO send signal to generators
     return;
 }
