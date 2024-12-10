@@ -151,9 +151,9 @@ int main(int argc, char **argv)
 
     
     
-    if(bestSolution.size == 0 && hasBeenTouched){
+    if(bestSolution.size == 0 && bestSolutionhasBeenTouched){
         printf("The graph is 3-colorable\n");
-    } else if(hasBeenTouched) {
+    } else if(bestSolutionhasBeenTouched) {
         printf("The best solution removes these edges:\n");
         printEdgeSet(&bestSolution);
     } else {
