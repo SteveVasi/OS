@@ -17,7 +17,7 @@ void colorRandomly(vertexSet *vs, coloredVertexSet *c);
 errorCode selectInvalidEdges(coloredVertexSet *coloring, graph *g, edgeSet *invalids);
 bool isValid(edge e, coloredVertexSet *cvs) ;
 errorCode findColorOfVertex(vertex v, coloredVertexSet *set, COLOR *col);
-bool shouldRun(void);
+bool isRunning(void);
 
 int main(int argc, char **argv)
 {
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     initSharedBufferClient(sharedBuffer);
 
     // algorithm in loop
-    while(shouldRun()){
+    while(isRunning()){
         colorRandomly(&(g->vertexSet), coloring);
         selectInvalidEdges(coloring, g, invalids);
         writeToBuffer(invalids, sharedBuffer);
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     return return_value;
 }
 
-bool shouldRun(void)
+bool isRunning(void)
 { // TODO impl
     return 1; 
 }

@@ -11,7 +11,7 @@
 
 void usage(void);
 void handleSignal(int signal);
-bool shouldRun(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag);
+bool isRunning(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag);
 bool isBetterThan(edgeSet *removedEdges1, edgeSet *removedEdges2);
 
 volatile sig_atomic_t quitFlag = 0;
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
     initRemovedEdgeSet(&bestSolution);
     bool bestSolutionhasBeenTouched = 0;
 
-    while (shouldRun(solutions_count, limit, bestSolution.size, &quitFlag))
+    while (isRunning(solutions_count, limit, bestSolution.size, &quitFlag))
     {
         printf("In loop!\n");
         fflush(stdout);
@@ -173,7 +173,7 @@ bool isBetterThan(edgeSet *removedEdges1, edgeSet *removedEdges2)
 }
 
 
-bool shouldRun(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag)
+bool isRunning(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag)
 {
     if (*quitFlag) {
         return 0;
