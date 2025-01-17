@@ -49,10 +49,10 @@ edge parseEdge(char *argument)
 }
 
 static edgeSet selectOnlyValidEdges(edgeSet *edgeSet){
-    edgeSet valids = malloc(sizeof(*edgeSet));
+    edgeSet *valids = malloc(sizeof(*edgeSet));
     int counter = 0;
     for(int i = 0; i < edgeSet->edgeCount; i++){
-        if(areValid(edgeSet->edgeArray[i])){
+        if(areValid(&(edgeSet->edgeArray[i]))){
             valids[counter] = edgeSet->edgeArray[i];
             counter++;
         }

@@ -24,7 +24,7 @@ typedef struct {
     coloredVertex vertexArray[MAX_EDGES * 2];
     int vertexCount;
     /*
-        The formula to determine the number of edges e in a complete graph is given by e = n * ( n − 1 )/ 2 
+        The formula to determine the number of edges e in a complete undirected graph is given by e = n * ( n − 1 )/ 2 
         where e is the number of edges and n is the number of vertices
         if we solve for n we get:
         n = +- 1/2 * (1 + sqrt(1 + 8e))
