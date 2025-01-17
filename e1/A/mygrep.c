@@ -61,6 +61,8 @@ bool grepFile(flags flags)
 {
     bool (*compare)(char *keyword, char *line);
 
+
+    
     if (flags.isCaseSensitive)
     {
         compare = &compareSensitive;
@@ -69,6 +71,8 @@ bool grepFile(flags flags)
     {
         compare = &compareInsensitive;
     }
+
+    // bool (*compare)(char* char*)
 
     char *currentLine = NULL;
     size_t len = 0; // size is unsigned 

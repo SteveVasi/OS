@@ -1,61 +1,60 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <getopt.h>
 #include <signal.h>
-#include <semaphore.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 #include "circularBuffer.h"
-#include <sys/stat.h>
-#include <fcntl.h>
+
 
 #define bool int
 
 void usage(void);
-circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor);
-int openSharedMemory();
-void truncateSharedMemory(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer);
-bool shouldRun(int solutions, int maxSolutions);
 void handleSignal(int signal);
-void exitOnSemError(void);
-void checkForSemError(circularBuffer *circularBuffer);
-void initCircularBuffer(circularBuffer *circularBuffer);
-void writeToBuffer(edgeSet *edgeSet, circularBuffer *circularBuffer);
-edgeSet readFromBuffer(circularBuffer *circularBuffer);
-void cleanUp(circularBuffer *circularBuffer);
+bool isRunning(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag);
+bool isBetterThan(edgeSet *removedEdges1, edgeSet *removedEdges2);
 
-volatile sig_atomic_t quit = 0;
+volatile sig_atomic_t quitFlag = 0;
 
 int main(int argc, char **argv)
 {
+    // https://youtu.be/AKJhThyTmQw?si=JGGSNW6eBqxMThib
+    // goto (further down but not up!)
+    int return_value = 0;
+
 
     signal(SIGINT, handleSignal);
     signal(SIGTERM, handleSignal);
 
-    int limit = INT_MAX;
+    int limit = -1;
     unsigned int delay = 0;
     int opt;
     int allowedArgCount = 0;
+    bool flag_n = 0;
+    bool flag_w = 0;
     while ((opt = getopt(argc, argv, "n:w:")) != -1)
     {
         switch (opt)
         {
         case 'n':
             limit = atoi(optarg);
-            allowedArgCount += 2;
+            flag_n = 1;
             break;
         case 'w':
             delay = atoi(optarg);
-            allowedArgCount += 2;
+            flag_w = 1;
             break;
         default:
             usage();
             exit(EXIT_FAILURE);
             break;
         }
+    }
+
+    if(flag_n){
+        allowedArgCount += 2;
+    }if(flag_w){
+        allowedArgCount += 2;
     }
 
     if ((argc - 1) != allowedArgCount)
@@ -77,129 +76,126 @@ int main(int argc, char **argv)
 
     // supervisor sets up shared memory, semaphores and circular buffer
 
-    circularBuffer *circularBuffer;
     int sharedMemoryFileDescriptor = openSharedMemory();
-    truncateSharedMemory(sharedMemoryFileDescriptor, circularBuffer);
-    circularBuffer = memoryMapBuffer(sharedMemoryFileDescriptor);
-    initCircularBuffer(circularBuffer);
+    if(sharedMemoryFileDescriptor < 0){
+        return_value = -1;
+        return EXIT_FAILURE;
+    }
+    if(truncateSharedMemory(sharedMemoryFileDescriptor)){
+        return_value = -1;
+        goto close_shared_memory;
+    };
+    circularBuffer *sharedBuffer = NULL;
+    if(memoryMapBuffer(sharedMemoryFileDescriptor, &sharedBuffer)){
+        perror("mmap err");
+        goto close_shared_memory;
+    }
+    if(initSharedBufferServer(sharedBuffer)){
+        perror("initBufferServer err");
+        return_value = -1;
+        goto unmap_shared_memory;
+    }
 
     sleep(delay);
     volatile unsigned int solutions_count = 0;
 
-    edgeSet bestSolution;
-    while (shouldRun(solutions_count, limit))
-    {
-    }
+    removedEdgeSet bestSolution;
+    initRemovedEdgeSet(&bestSolution);
+    bool bestSolutionhasBeenTouched = 0;
 
-    cleanUp(circularBuffer);
-    int err1 = close(sharedMemoryFileDescriptor);
-    int err2 = shm_unlink(CIRCULAR_ARRAY_BUFFER);
+    while (isRunning(solutions_count, limit, bestSolution.size, &quitFlag))
+    {
+        printf("In loop!\n");
+        fflush(stdout);
+
+        if(quitFlag) {
+            break;
+        }
+
+        edgeSet readSet;
+        
+        if(readFromBuffer(sharedBuffer, &readSet)){
+            goto cleanUpAllResources;
+        }
+
+        if(isBetterThan(&readSet, &bestSolution)){
+            copyEdgeSet(&bestSolution, &readSet);
+            bestSolutionhasBeenTouched = 1;
+        }
+    }
+    printf("Out of the loop!\n");
+    fflush(stdout);
+
     
-    _exit(1);
-}
+    cleanUpAllResources:
+    // close_semaphores:
+        if(closeSemaphores(sharedBuffer)){
+            return_value = -1;
+        };
+    // unlink_semaphores:
+        if(unlinkSemaphores()){
+            return_value = -1;
+        }
+    unmap_shared_memory:
+        if(unmapSharedMemory(sharedBuffer)){
+            return_value = -1;
+        };
+    close_shared_memory:
+        if(close(sharedMemoryFileDescriptor)){
+            return_value = -1;
+        }; 
+    // unlink_shared_memory:
+        if(unlinkSharedMemory()){
+            return_value = -1;
+        };
 
-circularBuffer *memoryMapBuffer(int sharedMemoryFileDescriptor)
-{
-    circularBuffer *circularBuffer = mmap(NULL,
-                                          sizeof(*circularBuffer),
-                                          PROT_READ | PROT_WRITE,
-                                          MAP_SHARED,
-                                          sharedMemoryFileDescriptor,
-                                          0);
-    if (circularBuffer == MAP_FAILED)
-    {
-        perror("Memory mapping failed");
-        _exit(EXIT_FAILURE);
+    
+    
+    if(bestSolution.size == 0 && bestSolutionhasBeenTouched){
+        printf("The graph is 3-colorable\n");
+    } else if(bestSolutionhasBeenTouched) {
+        printf("The best solution removes these edges:\n");
+        printEdgeSet(&bestSolution);
+    } else {
+        printf("Could not find any solution\n");
     }
-    return circularBuffer;
+    fflush(stdout);
+
+
+    freeEdgeSet(&bestSolution);
+
+    return return_value;
 }
 
-int openSharedMemory()
+bool isBetterThan(edgeSet *removedEdges1, edgeSet *removedEdges2)
 {
-    int shm_fd = shm_open(CIRCULAR_ARRAY_BUFFER, O_RDWR | O_CREAT, 0600);
-    if (shm_fd == -1)
-    {
-        perror("Failed to create shared memory");
-        _exit(EXIT_FAILURE);
+    return removedEdges1->size < removedEdges2->size;
+}
+
+
+bool isRunning(int solutions, int maxSolutions, int bestSolutionSize, volatile sig_atomic_t *quitFlag)
+{
+    if (*quitFlag) {
+        return 0;
     }
-    return shm_fd;
-}
-
-void truncateSharedMemory(int sharedMemoryFileDescriptor, circularBuffer *circularBuffer)
-{
-    int truncation = ftruncate(sharedMemoryFileDescriptor, sizeof(*circularBuffer));
-    if (truncation < 0)
-    {
-        perror("Failed to truncate shared memory");
-        close(sharedMemoryFileDescriptor);
-        _exit(EXIT_FAILURE);
+    if (maxSolutions < 0) {
+        return bestSolutionSize != 0;
+    } else {
+        return (solutions <= maxSolutions) || bestSolutionSize != 0;
     }
-}
-
-bool shouldRun(int solutions, int maxSolutions)
-{
-    return (solutions <= maxSolutions) && (quit == 0);
 }
 
 void handleSignal(int signal)
 {
-    quit = 1;
+    quitFlag = 1;
+    char* msg = "Received signal";
+    write(STDOUT_FILENO, msg, strlen(msg));
+    // TODO send signal to generators
+    return;
 }
 
 void usage(void)
 {
     printf("SYNOPSIS:\n");
     printf("    supervisor [-n limit] [-w delay]\n");
-}
-
-void exitOnSemError(void)
-{
-    perror("An error with a semaphore has occurred. Exiting program now");
-    _exit(EXIT_FAILURE);
-}
-
-void checkForSemError(circularBuffer *circularBuffer)
-{
-    if (circularBuffer->freeSpace == SEM_FAILED ||
-        circularBuffer->usedSpace == SEM_FAILED ||
-        circularBuffer->writeMutex == SEM_FAILED)
-    {
-        exitOnSemError();
-    }
-}
-
-void initCircularBuffer(circularBuffer *circularBuffer)
-{
-    circularBuffer->writeIndex = 0;
-    circularBuffer->readIndex = 0;
-    circularBuffer->freeSpace = sem_open(SEM_FREE_SPACE, O_CREAT, 777, BUFFER_SIZE);
-    circularBuffer->usedSpace = sem_open(SEM_USED_SPACE, O_CREAT, 777, 0);
-    circularBuffer->writeMutex = sem_open(SEM_WRITE_MUTEX, O_CREAT, 777, 1);
-    checkForSemError(circularBuffer);
-}
-
-edgeSet readFromBuffer(circularBuffer *circularBuffer)
-{
-    edgeSet result;
-
-    int err1 = sem_wait(circularBuffer->usedSpace);
-
-    result = circularBuffer->buffer[circularBuffer->readIndex];
-    circularBuffer->readIndex = (circularBuffer->readIndex + 1) % BUFFER_SIZE;
-
-    int err2 = sem_post(circularBuffer->freeSpace);
-    // TODO error handling
-    return result;
-}
-
-void cleanUp(circularBuffer *circularBuffer)
-{
-    int err4 = munmap(circularBuffer, sizeof(*circularBuffer));
-    int err1 = sem_close(circularBuffer->freeSpace);
-    int err2 = sem_close(circularBuffer->usedSpace);
-    int err3 = sem_close(circularBuffer->writeMutex);
-    int err5 = sem_unlink(SEM_FREE_SPACE);
-    int err6 = sem_unlink(SEM_USED_SPACE);
-    int err7 = sem_unlink(SEM_WRITE_MUTEX);
-    // TODO error handling
 }
