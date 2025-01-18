@@ -58,8 +58,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    if(length == 1){
-        //Write line to stdout
+    if(length == 1){ 
         fprintf(stdout, argv[0]);
         return EXIT_SUCCESS;
     }
@@ -70,8 +69,7 @@ int main(int argc, char *argv[]) {
         pid_t pid_first_child = fork();
         pid_t pid_second_child = fork();
 
-        // create 2 unnamed pipes per child to redirect stdin and stdout with dup2
-        // [0] is read end [1] is write end
+        // [0] is read end, [1] is write end
         int pipefd_first_child[2];
         int pipefd_second_child[2];
         
@@ -86,25 +84,35 @@ int main(int argc, char *argv[]) {
 
         dup2(pipefd_first_child[0], STDIN_FILENO);
         dup2(pipefd_first_child[1], STDOUT_FILENO);
+        dup2(pipefd_second_child[0], STDIN_FILENO);
+        dup2(pipefd_second_child[1], STDOUT_FILENO);
 
         switch (pid_first_child)
         {
         case -1:
             perror("Could not fork!\n");
             break;
-        case 0: // we are in child task
-            //exec
-        
+        case 0: // we are in child task        
         
             //execlp: l -> variable number of args, 
             //        p -> search env var $PATH for the program specified 
             // 1. argument is programs name argv[0]
             // 2. argument is NULL pointer
+
+            // read from parent
             
             //exit
             break;
         default: // we are in parent task
-            // parent wants to use childs output
+
+            //write to child
+            fwrite(argv[0], sizeof(char), 0, pipefd_first_child[1]);
+            fwrite(argv[midpoint], sizeof(char), 0, pipefd_second_child[1]);
+
+            char* first_line;
+            char* second_line;
+            fread()
+            // parent wants to use child's output
             // wait for children to finish
             // merge the outputs of children
             break;
