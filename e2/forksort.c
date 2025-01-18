@@ -30,6 +30,10 @@ int getMidpoint(int size){
     }
 }
 
+bool compareLines(char* line1, char* line2){
+    return strcmp(line1, line2) <= 0;
+}
+
 
 /*
  * recursive variant of merge sort
@@ -56,14 +60,12 @@ int main(int argc, char *argv[]) {
 
     if(length == 1){
         //Write line to stdout
+        fprintf(stdout, argv[0]);
         return EXIT_SUCCESS;
     }
 
     if(length > 1){
         int midpoint = getMidpoint(length);
-
-        
-        // execute each part in a new child process (2 new child processes are created)
         
         pid_t pid_first_child = fork();
         pid_t pid_second_child = fork();
@@ -82,14 +84,15 @@ int main(int argc, char *argv[]) {
                exit(EXIT_FAILURE);
         }
 
-
+        dup2(pipefd_first_child[0], STDIN_FILENO);
+        dup2(pipefd_first_child[1], STDOUT_FILENO);
 
         switch (pid_first_child)
         {
         case -1:
             perror("Could not fork!\n");
             break;
-        case 0: //child task
+        case 0: // we are in child task
             //exec
         
         
@@ -100,11 +103,10 @@ int main(int argc, char *argv[]) {
             
             //exit
             break;
-        default: //parent task
+        default: // we are in parent task
             // parent wants to use childs output
-            // redirect stdin (fd 0, stdin_fileno)
-            // and or (fd 1, stout_fileno) in new process
-            //wait for child to finish
+            // wait for children to finish
+            // merge the outputs of children
             break;
         }
         
