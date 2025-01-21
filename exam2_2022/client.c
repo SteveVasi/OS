@@ -7,6 +7,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define MAX_RESPONSE_LEN 1024 // Maximum size for server response
+
+
 static int setup(char* port){
 
     struct addrinfo hints;
@@ -36,21 +39,43 @@ static int setup(char* port){
     return sockfd;
 }
 
-static int talk(int sockfd){
+static int communicate(int sockfd, char *buffer, char* msg){
+    FILE *stream = fdopen(sockfd, "r+");
+    if(stream == NULL){
+        perror("error with fdopen");
+        return -1;
+    }
+
+
+    int sent_count = fwrite(msg, sizeof(char), strlen(msg), stream);
+    if(sent_count != strlen(msg)){
+        perror("error with fwrite");
+    }
+
+    int received_count = fread(buffer, sizeof(char), 0, stream);
+    if(received_count < 0){
+        perror("error with fread");
+    }
     
-    return sockfd;
+
+    fclose(stream);
+    return 0;
 }
 
 int main(int argc, char *argv[])
 {
-    char* port = NULL;
-
-    if(argc != 2) {
+    if(argc != 3) {
         perror("error connecting");
         exit(EXIT_FAILURE);
     }
-
+    char *port = argv[1];
+    char *msg = argv[2];
 
     int sockfd = setup(port);
-    talk(sockfd);
+    char buffer[MAX_RESPONSE_LEN];
+    communicate(sockfd, buffer, msg);
+
+    printf("Received: %s", buffer);
+    close(sockfd);
+    return 0;
 }

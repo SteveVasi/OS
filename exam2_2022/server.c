@@ -4,11 +4,12 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <netdb.h>
 
 #define COMMAND ("./doStuff")
 #define MAX_ARGUMENT_LEN (100)
 
-static int setup(int listen_port){
+static int setup(char *port){
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -23,7 +24,7 @@ static int setup(int listen_port){
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(result));
     }
 
-    int sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);    
+    int sockfd = socket(address_info->ai_family, address_info->ai_socktype, address_info->ai_protocol);    
     if(sockfd < 0){
         perror("error creating socket");
         return -1;
@@ -43,46 +44,43 @@ static int setup(int listen_port){
 
 
 /**
- * ### Task 2: accept connections from the created socket as a server
-
+### Task 2: accept connections from the created socket as a server
 Wait for connections on the received socket file descriptor and accept them.
-
 Read the arguments transmitted by the client from the connection and save them in a buffer that can hold a C-string with `MAX_ARGUMENT_LEN` characters (excluding `\0`).
-
 Then you should call `execute_command()` with the content of the clients request and read the `FILE*` returned by this function.
-
 The execution of the command should be done in a forked child process.
-
 Then you should read the content from the file stream and send it to the client waiting on the accepted connection.
-
 (tip: use `fileno(FILE* f)` to read and write using the underlying file descriptors, when things don't work as expected. Another advantage is that you won't have to call `fflush`.)
-
- * 
- * 
  */
 
 
-void communicate(int sockfd) {
+int communicate(int sockfd, char *buffer) {
     int connfd = accept(sockfd, NULL, NULL);
-    FILE *stream = fdopen(sockfd, "r+");
+    FILE *stream = fdopen(connfd, "r+");
+    
     if (connfd < 0)
     {
         perror("accept error");
-        exit(EXIT_FAILURE);
-        // TODO close maybe?
+        return -1;
     }
 
-    char buf[MAX_ARGUMENT_LEN+1];
-    fread(buf, sizeof(char), MAX_ARGUMENT_LEN, connfd);
-    printf("Server received: %s", buf);
-
+    fread(buffer, sizeof(char), MAX_ARGUMENT_LEN, stream);
+    return 0;
 }
 
 
 
 int main(int argc, char *argv[])
 {
-    int port = argv[1];
+    char* port = NULL;
+    if(argc != 2) {
+        perror("wrong arguments!");
+        exit(EXIT_FAILURE);
+    }
+    port = argv[1];
+
     int fd = setup(port);
-    communicate(fd);
+    char buf[MAX_ARGUMENT_LEN+1];
+    communicate(fd, buf);
+    printf("Server received: %s", buf);
 }
