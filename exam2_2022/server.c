@@ -11,8 +11,8 @@
 static int setup(int listen_port){
 
     struct addrinfo hints;
-    struct addrinfo *address_info;
     memset(&hints, 0, sizeof(hints));
+    struct addrinfo *address_info;
 
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -23,25 +23,21 @@ static int setup(int listen_port){
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(result));
     }
 
-    int sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-    if(sockfd)
-    
+    int sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);    
     if(sockfd < 0){
         perror("error creating socket");
-        exit(EXIT_FAILURE);
+        return -1;
     }
     
     if(bind(sockfd, address_info->ai_addr, address_info->ai_addrlen) < 0){
         perror("bind error");
-        exit(EXIT_FAILURE);
-        // TODO close maybe?
+        return -1;
     }
     freeaddrinfo(address_info);
-    /*if(listen(sockfd, 0) < 0){
+    if(listen(sockfd, 1) < 0){
         perror("listen error");
-        exit(EXIT_FAILURE);
-        // TODO close maybe?
-    }*/
+        return -1;        
+    }
     return sockfd;
 }
 
@@ -68,6 +64,7 @@ Then you should read the content from the file stream and send it to the client 
 
 void communicate(int sockfd) {
     int connfd = accept(sockfd, NULL, NULL);
+    FILE *stream = fdopen(sockfd, "r+");
     if (connfd < 0)
     {
         perror("accept error");
@@ -77,6 +74,7 @@ void communicate(int sockfd) {
 
     char buf[MAX_ARGUMENT_LEN+1];
     fread(buf, sizeof(char), MAX_ARGUMENT_LEN, connfd);
+    printf("Server received: %s", buf);
 
 }
 
