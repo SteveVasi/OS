@@ -51,6 +51,7 @@ static int communicate(int sockfd, char *buffer, char* msg){
     if(sent_count != strlen(msg)){
         perror("error with fwrite");
     }
+    fflush(stream);
 
     int received_count = fread(buffer, sizeof(char), 0, stream);
     if(received_count < 0){
@@ -75,7 +76,7 @@ int main(int argc, char *argv[])
     char buffer[MAX_RESPONSE_LEN];
     communicate(sockfd, buffer, msg);
 
-    printf("Received: %s", buffer);
+    printf("Received: %s\n", buffer);
     close(sockfd);
     return 0;
 }

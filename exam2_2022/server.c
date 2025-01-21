@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <netdb.h>
 
-#define COMMAND ("./doStuff")
+#define COMMAND ("cat")
 #define MAX_ARGUMENT_LEN (100)
+#define BUFFER_SIZE (1024)
 
 static int setup(char *port){
 
@@ -39,9 +41,41 @@ static int setup(char *port){
         perror("listen error");
         return -1;        
     }
+    printf("accepting connections on port %s\n", port);
     return sockfd;
 }
 
+FILE* execute_command(char *cmd){
+    int pipefd[2];
+    if(pipe(pipefd) < 0){
+        perror("pipe error");
+        return NULL;
+    }
+    
+    
+    pid_t pid = fork();
+    if(pid < 0){
+        perror("fork error");
+        return NULL;
+    }
+
+    if(pid == 0){
+        // were in child process
+        close(pipefd[0]);
+        dup2(pipefd[1], STDOUT_FILENO); // redirect stdout to pipe
+        dup2(pipefd[1], STDERR_FILENO); // redirect stderr to pipe
+        close(pipefd[1]);
+
+        execlp("/bin/sh", "sh", "-c", cmd, NULL);
+        perror("execlp error");
+        return NULL;
+    } else {
+        // parent process
+        close(pipefd[1]);
+        return fdopen(pipefd[0], "r");
+    }
+    
+}
 
 /**
 ### Task 2: accept connections from the created socket as a server
@@ -54,7 +88,7 @@ Then you should read the content from the file stream and send it to the client 
  */
 
 
-int communicate(int sockfd, char *buffer) {
+int communicate(int sockfd, char *request) {
     int connfd = accept(sockfd, NULL, NULL);
     FILE *stream = fdopen(connfd, "r+");
     
@@ -64,7 +98,24 @@ int communicate(int sockfd, char *buffer) {
         return -1;
     }
 
-    fread(buffer, sizeof(char), MAX_ARGUMENT_LEN, stream);
+    fread(request, sizeof(char), MAX_ARGUMENT_LEN, stream);
+    FILE* output = execute_command(request);
+    if(output == NULL){
+        char *ret_msg = "Error executing command\n";
+        fwrite(ret_msg, sizeof(char), strlen(ret_msg), stream);
+        fclose(stream);
+        return -1;
+    }
+
+    char buffer[BUFFER_SIZE];
+    size_t n;
+
+    while((n = fread(buffer, sizeof(char), sizeof(buffer), output)) > 0){
+        fwrite(buffer, sizeof(char), n, stream);
+    }
+    
+    fclose(output);
+    fclose(stream);
     return 0;
 }
 
@@ -82,5 +133,11 @@ int main(int argc, char *argv[])
     int fd = setup(port);
     char buf[MAX_ARGUMENT_LEN+1];
     communicate(fd, buf);
-    printf("Server received: %s", buf);
+    
+
+    
+        
+
+
+    printf("Server received: %s\n", buf);
 }
