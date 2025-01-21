@@ -7,27 +7,29 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static int setup(int port){
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+static int setup(char* port){
+
+    struct addrinfo hints;
+    struct addrinfo *address_info;
+    memset(&hints, 0, sizeof(hints));
+
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    int result = getaddrinfo("localhost", port, &hints, &address_info);
+    if(result != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(result));
+    }
+
+    int sockfd = socket(address_info->ai_family, 
+                        address_info->ai_socktype, 
+                        address_info->ai_protocol);
     if(sockfd < 0){
         perror("error creating socket");
         exit(EXIT_FAILURE);
     }
 
-    struct addrinfo hints, *ai;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    int result = getaddrinfo("localhost", &port, &hints, &ai);
-    if(result != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(result));
-    }
-
-
-    struct sockaddr server_addr;
-    memset(&server_addr, 0, sizeof(server_addr));
-
-    if(connect(sockfd, &server_addr, sizeof(server_addr))){
+    if(connect(sockfd, address_info->ai_addr, address_info->ai_addrlen) < 0){
         perror("error connecting");
         exit(EXIT_FAILURE);
     }
@@ -41,19 +43,11 @@ static int talk(int sockfd){
 
 int main(int argc, char *argv[])
 {
-    int opt;
     char* port = NULL;
 
-    while ((opt = getopt(argc, argv, "p:")) != -1) {
-        switch (opt) {
-            case 'p':
-                port = argv[optarg];
-                break;
-            case '?':
-            default:
-                perror("Invalid args");
-                return EXIT_FAILURE;
-        }
+    if(argc != 2) {
+        perror("error connecting");
+        exit(EXIT_FAILURE);
     }
 
 
