@@ -49,7 +49,7 @@ Then you should read the content from the file stream and send it to the client 
  */
 
 
-void task2(int sockfd) {
+void communicate(int sockfd) {
     int connfd = accept(sockfd, NULL, NULL);
     if (connfd < 0)
     {
@@ -64,9 +64,10 @@ void task2(int sockfd) {
 }
 
 
+
 int main(int argc, char *argv[])
 {
     int port = strtol(argv[1], NULL, 10);
     int fd = listen_socket(argv[1]);
-    task2(fd);
+    communicate(fd);
 }
