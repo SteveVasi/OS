@@ -71,6 +71,7 @@ FILE* execute_command(char *cmd){
         return NULL;
     } else {
         // parent process
+        wait(NULL);
         close(pipefd[1]);
         return fdopen(pipefd[0], "r");
     }
