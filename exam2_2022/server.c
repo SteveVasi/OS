@@ -8,23 +8,40 @@
 #define COMMAND ("./doStuff")
 #define MAX_ARGUMENT_LEN (100)
 
-static int listen_socket(int listen_port){
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+static int setup(int listen_port){
+
+    struct addrinfo hints;
+    struct addrinfo *address_info;
+    memset(&hints, 0, sizeof(hints));
+
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    int result = getaddrinfo(NULL, port, &hints, &address_info);
+    if(result != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(result));
+    }
+
+    int sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if(sockfd)
+    
     if(sockfd < 0){
         perror("error creating socket");
         exit(EXIT_FAILURE);
     }
-    struct sockaddr_in *sa;
-    if(bind(sockfd, sa, sizeof(struct sockaddr_in) < 0)){
+    
+    if(bind(sockfd, address_info->ai_addr, address_info->ai_addrlen) < 0){
         perror("bind error");
         exit(EXIT_FAILURE);
         // TODO close maybe?
     }
-    if(listen(sockfd, 0) < 0){
+    freeaddrinfo(address_info);
+    /*if(listen(sockfd, 0) < 0){
         perror("listen error");
         exit(EXIT_FAILURE);
         // TODO close maybe?
-    }
+    }*/
     return sockfd;
 }
 
@@ -67,7 +84,7 @@ void communicate(int sockfd) {
 
 int main(int argc, char *argv[])
 {
-    int port = strtol(argv[1], NULL, 10);
-    int fd = listen_socket(argv[1]);
+    int port = argv[1];
+    int fd = setup(port);
     communicate(fd);
 }
