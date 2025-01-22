@@ -32,10 +32,15 @@ static int setup(char* port){
         exit(EXIT_FAILURE);
     }
 
+    printf("Attempting to connect to server\n");
+    fflush(stdout);
     if(connect(sockfd, address_info->ai_addr, address_info->ai_addrlen) < 0){
         perror("error connecting");
         exit(EXIT_FAILURE);
     }
+
+    printf("Connected to server\n");
+    fflush(stdout);
     return sockfd;
 }
 
@@ -46,14 +51,17 @@ static int communicate(int sockfd, char *buffer, char* msg){
         return -1;
     }
 
-
+    printf("Attempting to write to server: %s\n", msg);
+    fflush(stdout);
     int sent_count = fwrite(msg, sizeof(char), strlen(msg), stream);
+    fflush(stream);
     if(sent_count != strlen(msg)){
         perror("error with fwrite");
     }
-    fflush(stream);
 
-    int received_count = fread(buffer, sizeof(char), 0, stream);
+    int received_count = fread(buffer, sizeof(char), MAX_RESPONSE_LEN, stream);
+    fflush(stream);
+    buffer[received_count] = '\0';
     if(received_count < 0){
         perror("error with fread");
     }

@@ -4,10 +4,21 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <netdb.h>
 
-#define COMMAND ("cat")
+
+#define READ_END 0
+#define WRITE_END 1
+
+
+typedef struct {
+    pid_t pid;
+    int parent_to_child[2];
+    int child_to_parent[2];
+} child_t;
+
 #define MAX_ARGUMENT_LEN (100)
 #define BUFFER_SIZE (1024)
 
@@ -31,6 +42,9 @@ static int setup(char *port){
         perror("error creating socket");
         return -1;
     }
+
+    int optval = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
     
     if(bind(sockfd, address_info->ai_addr, address_info->ai_addrlen) < 0){
         perror("bind error");
@@ -41,42 +55,45 @@ static int setup(char *port){
         return -1;        
     }
     freeaddrinfo(address_info);
-    printf("accepting connections on port %s\n", port);
+    printf("listening on port %s\n", port);
+    fflush(stdout);
     return sockfd;
 }
 
-FILE* execute_command(char *cmd){
-    int pipefd[2];
-    if(pipe(pipefd) < 0){
-        perror("pipe error");
-        return NULL;
+int create_child(child_t *child){
+    if(pipe(child->child_to_parent)){
+        error("pipe error");
     }
-    
-    
-    pid_t pid = fork();
-    if(pid < 0){
-        perror("fork error");
-        return NULL;
+    if(pipe(child->parent_to_child)){
+        close(child->parent_to_child[READ_END]);
+        close(child->parent_to_child[WRITE_END]);
+        error("pipe error");
     }
 
-    if(pid == 0){
-        // were in child process
-        close(pipefd[0]);
-        dup2(pipefd[1], STDOUT_FILENO); // redirect stdout to pipe
-        dup2(pipefd[1], STDERR_FILENO); // redirect stderr to pipe
-        close(pipefd[1]);
+    child->pid = fork();
+    if(child->pid < 0){
+        error("fork error");
+    }
 
-        execlp("/bin/sh", "sh", "-c", cmd, NULL);
-        perror("execlp error");
-        return NULL;
+    if(child->pid == 0) {
+        // in child
+        close(child->child_to_parent[READ_END]);
+        close(child->parent_to_child[WRITE_END]);
+
+        dup2(child->child_to_parent[WRITE_END], STDOUT_FILENO);
+        dup2(child->parent_to_child[READ_END], STDIN_FILENO);
+
+
     } else {
-        // parent process
-        wait(NULL);
-        close(pipefd[1]);
-        return fdopen(pipefd[0], "r");
+        // in parent
+        close(child->parent_to_child[READ_END]);
+        close(child->child_to_parent[WRITE_END]);
     }
-    
+
+    return 0;
 }
+
+
 
 /**
 ### Task 2: accept connections from the created socket as a server
@@ -89,22 +106,10 @@ Then you should read the content from the file stream and send it to the client 
  */
 
 
-int communicate(int sockfd, char *request) {
-    FILE *stream = fdopen(connfd, "r+");
-    if(stream == NULL){
-        perror("fdopen error");
-        return -1;
-    }
+int process_message(int client_fd, child_t child) {
 
-    int connfd = accept(sockfd, NULL, NULL);
-    if (connfd < 0)
-    {
-        perror("accept error");
-        return -1;
-    }
-
-    fread(request, sizeof(char), MAX_ARGUMENT_LEN, stream);
-    FILE* output = execute_command(request);
+    FILE *connFile = fdopen(client_fd, "r+");
+    
     if(output == NULL){
         char *ret_msg = "Error executing command\n";
         fwrite(ret_msg, sizeof(char), strlen(ret_msg), stream);
@@ -120,29 +125,81 @@ int communicate(int sockfd, char *request) {
     }
     
     fclose(output);
+    return 0;
+}
+
+int take_request(char* request, int fd){
+    FILE *stream = fdopen(connfd, "r+");
+    if(stream == NULL){
+        perror("fdopen error");
+        return -1;
+    }
+
+    read(connfd, request, MAX_ARGUMENT_LEN);
+    printf("Server received request: %s\n", request);
+    fflush(stdout);
     fclose(stream);
     return 0;
 }
 
+int execute_command(char* request){
+    execlp("ls", "-l", "-a", (char *) NULL);
+    perror("execlp error");
+    exit(EXIT_FAILURE);
+}
 
+int execute_and_wait(child_t *child, char* request){
+    if(child->pid == 0){
+        // were in child process
+        printf("We are in child process, about to execute command\n");
+        fflush(stdout);
+        execute_command(request);
+    } else {
+        // parent process
+        int status;
+        printf("waiting on child process\n");
+        fflush(stdout);
+        fflush(stderr);
+        if(wait(&status)){
+            fprintf(stderr, "wait failed\n");
+            return NULL;
+        };
+    }
+    
+    return 0;
+}
+
+int accept_client(socket_fd){
+    printf("Accepting connections now!\n");
+    fflush(stdout);
+    int connfd = accept(sockfd, NULL, NULL);
+    if (connfd < 0)
+    {
+        error("accept error");
+        return -1;
+    }
+    printf("Accepted client\n");
+    fflush(stdout);
+    return connfd;
+}
 
 int main(int argc, char *argv[])
 {
     char* port = NULL;
+    char request[MAX_ARGUMENT_LEN+1];
+    child_t child;
+
     if(argc != 2) {
-        perror("wrong arguments!");
+        fprintf(stderr, "wrong arguments!\n");
         exit(EXIT_FAILURE);
     }
     port = argv[1];
 
-    int fd = setup(port);
-    char buf[MAX_ARGUMENT_LEN+1];
-    communicate(fd, buf);
+    int socket_fd = setup(port);
+    int client_fd = accept_client(socket_fd);
+    take_request(request, fd)
+    create_child(&child);
+    execute_and_wait(&child, request);
+    process_message(client, child);
     
-
-    
-        
-
-
-    printf("Server received: %s\n", buf);
 }
