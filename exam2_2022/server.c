@@ -36,11 +36,11 @@ static int setup(char *port){
         perror("bind error");
         return -1;
     }
-    freeaddrinfo(address_info);
     if(listen(sockfd, 1) < 0){
         perror("listen error");
         return -1;        
     }
+    freeaddrinfo(address_info);
     printf("accepting connections on port %s\n", port);
     return sockfd;
 }
@@ -90,9 +90,13 @@ Then you should read the content from the file stream and send it to the client 
 
 
 int communicate(int sockfd, char *request) {
-    int connfd = accept(sockfd, NULL, NULL);
     FILE *stream = fdopen(connfd, "r+");
-    
+    if(stream == NULL){
+        perror("fdopen error");
+        return -1;
+    }
+
+    int connfd = accept(sockfd, NULL, NULL);
     if (connfd < 0)
     {
         perror("accept error");
